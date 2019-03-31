@@ -1,0 +1,9 @@
+https://www.npmjs.com/package/spotify-application-client --> find mute length & if ad is playing (mac only)
+https://github.com/jaebradley/spotify-application-client
+https://developer.spotify.com/documentation/web-api/reference/tracks/get-track/ --> universal, but known if will detect ads | http://prntscr.com/n4ych3 IT WORKS!
+https://robotjs.io/docs/syntax --> to mute
+
+https://stackoverflow.com/questions/33883360/get-spotify-currently-playing-track
+https://github.com/dlrudie/Snip --> windows solution.
+
+check if on mac: https://stackoverflow.com/questions/10527983/best-way-to-detect-mac-os-x-or-windows-computers-with-javascript-or-jquery
