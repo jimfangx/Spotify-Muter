@@ -57,9 +57,9 @@ ipcRenderer.on('codeCallback', (event, code) => {
             function getPlaying() {
                 spotifyApi.getMyCurrentPlayingTrack({ // Currently throwing 401
                 })
-                    .then(function (data) {
+                    .then(function (data) { // need to be able to detect an ad playing and show it
                         // Output items
-                        console.log("Now Playing: ", data.body.item.name);
+                        console.log("Now Playing: ", data);
                         document.getElementById('nowPlaying').innerHTML = `Now Playing: ${data.body.item.name}`
 
                     }, function (err) {
