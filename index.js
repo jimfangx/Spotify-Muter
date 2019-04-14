@@ -38,31 +38,39 @@ app.on('ready', () => {
     //     });
     // })
     // ipcMain.on("oauth", (event, getToken) => {
-    var generateRandomString = function (length) {
-        var text = '';
-        var possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    // var generateRandomString = function (length) {
+    //     var text = '';
+    //     var possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
-        for (var i = 0; i < length; i++) {
-            text += possible.charAt(Math.floor(Math.random() * possible.length));
-        }
-        return text;
-    };
-    var state = generateRandomString(16);
+    //     for (var i = 0; i < length; i++) {
+    //         text += possible.charAt(Math.floor(Math.random() * possible.length));
+    //     }
+    //     return text;
+    // };
+    // var state = generateRandomString(16);
+    ipcMain.on("windowOpenReq", (event, link) => {
 
-    var authWindow = new BrowserWindow({ width: 800, height: 600, show: false, 'node-integration': false });
-    var spotifyUrl = 'https://accounts.spotify.com/authorize?';
-    var authUrl = spotifyUrl + 'client_id=' + config.clientID + '&response_type=code' + `&redirect_uri=http://localhost:8888` + '&scope=' + config.scope + '&state' + state;
-    // console.log(authUrl)
-    authWindow.loadURL(authUrl);
-    authWindow.show();
+        var authWindow = new BrowserWindow({ width: 800, height: 600, show: false, 'node-integration': false });
+        // var spotifyUrl = 'https://accounts.spotify.com/authorize?';
+        // var authUrl = spotifyUrl + 'client_id=' + config.clientID + '&response_type=code' + `&redirect_uri=http://localhost:8888` + '&scope=' + config.scope + '&state' + state;
+        console.log(link)
+        authWindow.loadURL(link);
+        authWindow.show();
 
-    session.defaultSession.webRequest.onCompleted((details) => {
-        // get the cookie after redirect from the page
-        var userauthcode = details.url.substring(details.url.indexOf("=") + 1, details.url.length)
-        
-        mainWindow.webContents.send('authCode:sent', userauthcode)
+        session.defaultSession.webRequest.onCompleted((details) => {
+            // get the cookie after redirect from the page
+            // console.log(details.webContentsId)
+            if (details.url.substring(0, 28) === "https://example.com/callback") {
+                var code = details.url.substring(details.url.indexOf("=") + 1, details.url.indexOf("&state"))
+
+                mainWindow.webContents.send('codeCallback', code)
+            }
+        })
+        ipcMain.on("authWindowCloseReq", (event) => {
+            authWindow.close()
+            mainWindow.webContents.send('authWindowCloseComplete')
+        })
     })
-
 
 
     // request(authUrl, function (error, response, body) {
