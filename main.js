@@ -4,6 +4,7 @@ const { ipcRenderer } = electron;
 var config = require('./config.json')
 var SpotifyWebApi = require('spotify-web-api-node');
 var schedule = require('node-schedule');
+var robot = require("robotjs");
 
 var generateRandomString = function (length) {
     var text = '';
@@ -60,13 +61,18 @@ ipcRenderer.on('codeCallback', (event, code) => {
                     .then(function (data) { // need to be able to detect an ad playing and show it
                         // Output items
                         console.log("Now Playing: ", data);
-                        document.getElementById('nowPlaying').innerHTML = `Now Playing: ${data.body.item.name}`
+                        try {
+                            document.getElementById('nowPlaying').innerHTML = `Now Playing: ${data.body.item.name}`
+                        } catch (err) {
+                            document.getElementById('nowPlaying').innerHTML = `Now Playing: ${data.body.currently_playing_type}`
+                            robot.keyTap("mute");
+                        }
 
                     }, function (err) {
                         console.log('Something went wrong!', err);
                     });
             }
-            setInterval(getPlaying, 3*1000)
+            setInterval(getPlaying, 3 * 1000)
         },
         function (err) {
             console.log('Something went wrong!', err);
