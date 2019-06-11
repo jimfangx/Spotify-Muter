@@ -1,22 +1,30 @@
 {
-  "name": "spotify_muter",
+  "name": "spotify-muter",
   "version": "1.0.0",
-  "description": "",
+  "description": "Spotify-Muter",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "electron ."
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AirFusion45/Spotify-Muter.git"
+  },
   "author": "AirFusion45",
   "license": "MIT",
-  "devDependencies": {
-    "electron": "^4.1.3"
-  },
+  "devDependencies": {},
   "dependencies": {
+    "electron": "^4.2.0",
+    "node-gyp": "^4.0.0",
     "node-schedule": "^1.3.2",
     "querystring": "^0.2.0",
     "request": "^2.88.0",
-    "spotify-web-api-js": "^1.2.0",
+    "robotjs": "^0.5.1",
     "spotify-web-api-node": "^4.0.0"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/AirFusion45/Spotify-Muter/issues"
+  },
+  "homepage": "https://github.com/AirFusion45/Spotify-Muter#readme"
 }

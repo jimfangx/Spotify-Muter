@@ -5,6 +5,8 @@ var config = require('./config.json')
 var SpotifyWebApi = require('spotify-web-api-node');
 var schedule = require('node-schedule');
 var robot = require("robotjs");
+// var { getVolume, setVolume } = require('sysvol');  
+// var robot = require("robotjs"); https://stackoverflow.com/questions/11178372/is-it-possible-to-simulate-keyboard-mouse-event-in-nodejs
 
 var generateRandomString = function (length) {
     var text = '';
@@ -17,26 +19,31 @@ var generateRandomString = function (length) {
 };
 var state = generateRandomString(16);
 
-var scopes = ['user-read-currently-playing'],
+var currentPlaying = ""
+var muted = false
+
+var scopes = ['user-read-currently-playing'], //part of auth process
     redirectUri = 'https://example.com/callback',
     clientId = '936ec326b81340c5bc4beb066f267d70',
     state = state;
 
-var spotifyApi = new SpotifyWebApi({
+var spotifyApi = new SpotifyWebApi({ //Spotify Wrapper init according to https://github.com/thelinmichael/spotify-web-api-node#usage
     clientId: clientId,
     clientSecret: config.clientSecret,
     redirectUri: redirectUri
 
 });
-var authorizeURL = spotifyApi.createAuthorizeURL(scopes, state);
+var authorizeURL = spotifyApi.createAuthorizeURL(scopes, state); // Start authorization process to get access token. --> https://github.com/thelinmichael/spotify-web-api-node#authorization || create auth url using wrapper init consturctor data. 
+// var currentSysVol = getvolume
+
 document.getElementById('status').innerHTML = "Current Status: Authorizing..."
 // document.getElementById('test').innerHTML = authorizeURL
-ipcRenderer.send('windowOpenReq', authorizeURL)
+ipcRenderer.send('windowOpenReq', authorizeURL) // requiest main process to open auth window with the auth url in var authorizeURL
 
-ipcRenderer.on('codeCallback', (event, code) => {
+ipcRenderer.on('codeCallback', (event, code) => { // received after auth success then: 
     // console.log(code)
 
-    spotifyApi.authorizationCodeGrant(code).then(
+    spotifyApi.authorizationCodeGrant(code).then( // then: gets access & refresh token using the code returned.
         function (data) {
             console.log('The token expires in ' + data.body['expires_in']);
             console.log('The access token is ' + data.body['access_token']);
@@ -46,7 +53,8 @@ ipcRenderer.on('codeCallback', (event, code) => {
             spotifyApi.setAccessToken(data.body['access_token']);
             spotifyApi.setRefreshToken(data.body['refresh_token']);
             document.getElementById("status").innerHTML = "Current Status: Authorization Successful!"
-            ipcRenderer.send("authWindowCloseReq")
+            ipcRenderer.send("authWindowCloseReq") // after getting access & refresh token, sends request to close auth window to index.js
+
             //add wait for a few second to 1 min then changve status to "monitoring & blocking"
 
             // spotifyApi.getMe()
@@ -55,24 +63,72 @@ ipcRenderer.on('codeCallback', (event, code) => {
             //     }, function (err) {
             //         console.log('Something went wrong!', err);
             //     });
-            function getPlaying() {
+
+
+
+
+
+            // Use a var to store current playing (ad or song name), if it new one changes from what is in variable, execute mute or unmute (so insted of every 3 seconds it runs every song change). Do in getPlaying() but outside of getmycurrentplayingtrack call.
+            let previousProgress = 0
+            let currentProgress = 0
+
+            // spotifyApi.getMyCurrentPlayingTrack({
+
+            // }).then(function (data) { // [0] is old
+            //     previousProgress = data.body.progress_ms;
+            // })
+
+            function getPlaying() { // get current playing every 3 seconds, and updates HTML.
+
                 spotifyApi.getMyCurrentPlayingTrack({ // Currently throwing 401
                 })
-                    .then(function (data) { // need to be able to detect an ad playing and show it
+                    .then(function (data) { // need to be able to detect an ad playing and show it -- done
                         // Output items
-                        console.log("Now Playing: ", data);
+                        // console.log("Now Playing: ", data);
+
+                        currentProgress = data.body.progress_ms;
+
+                        console.log(`previous progress: ${previousProgress}`)
+                        console.log(`current progress: ${currentProgress}`)
+                        console.log(`-------------------------------------------`)
                         try {
-                            document.getElementById('nowPlaying').innerHTML = `Now Playing: ${data.body.item.name}`
+                            if (data.statusCode == 204) { // check if user is not playing anything
+                                document.getElementById('nowPlaying').innerHTML = `Nothing is playing`
+                            } else {
+
+
+                                document.getElementById('nowPlaying').innerHTML = `Now Playing: ${data.body.item.name}`
+                                // robot.keyTap("audio_mute");
+                                if (data.body.item.name != "ad" && muted === true) { //unmute if ad stops playing
+                                    robot.keyTap("audio_mute");
+                                    muted = false
+                                }
+                            }
+
+
                         } catch (err) {
                             document.getElementById('nowPlaying').innerHTML = `Now Playing: ${data.body.currently_playing_type}`
-                            robot.keyTap("mute");
+                            if (data.body.currently_playing_type === "ad" && muted === false && (previousProgress != currentProgress)) {
+                                robot.keyTap("audio_mute");
+                                muted = true
+                            }
+                            if (previousProgress == currentProgress && muted === true) { // unmute if paused during ad
+                                robot.keyTap("audio_mute")
+                            }
+                            // robot.keyTap("audio_mute");
+                            // currentSysVol=sysvol.getVolume()
+                            // sysvol.setVolume(0).then(() => {
+                            //     document.getElementById('blockingStatus').innerHTML = "Yes"
+                            // })
                         }
 
                     }, function (err) {
                         console.log('Something went wrong!', err);
                     });
+                previousProgress = currentProgress;
             }
-            setInterval(getPlaying, 3 * 1000)
+            setInterval(getPlaying, 1 * 1000) //end of get playing
+
         },
         function (err) {
             console.log('Something went wrong!', err);

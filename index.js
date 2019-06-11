@@ -14,13 +14,17 @@ let mainWindow;
 
 http.createServer(function (request, response) {
     response.writeHead(200, { "Content-Type": "text/plain" });
-    response.write("Auth Successful - Please close this window.");
+    response.write("Authorization Successful - This window will close automatically, if it does not in 3 seconds, please close this window.");
     response.end();
 }).listen(8888);
 
 app.on('ready', () => {
     console.log(`I am ready @ ${Date()}`)
-    mainWindow = new BrowserWindow({});
+    mainWindow = new BrowserWindow({
+        webPreferences: {
+            nodeIntegration: true
+        }
+    });
     mainWindow.loadURL(`file://${__dirname}/main.html`)
 
     // const mainMenu = Menu.buildFromTemplate(menuTemplate);
@@ -48,25 +52,25 @@ app.on('ready', () => {
     //     return text;
     // };
     // var state = generateRandomString(16);
-    ipcMain.on("windowOpenReq", (event, link) => {
+    ipcMain.on("windowOpenReq", (event, link) => { // listnes for auth window open request from main.js. Uses "link" which is the auth link to open a window
 
-        var authWindow = new BrowserWindow({ width: 800, height: 600, show: false, 'node-integration': false });
+        var authWindow = new BrowserWindow({ width: 800, height: 600, show: false, 'node-integration': false }); // open auth window
         // var spotifyUrl = 'https://accounts.spotify.com/authorize?';
         // var authUrl = spotifyUrl + 'client_id=' + config.clientID + '&response_type=code' + `&redirect_uri=http://localhost:8888` + '&scope=' + config.scope + '&state' + state;
         console.log(link)
         authWindow.loadURL(link);
         authWindow.show();
 
-        session.defaultSession.webRequest.onCompleted((details) => {
+        session.defaultSession.webRequest.onCompleted((details) => { //check if a page has finished loading
             // get the cookie after redirect from the page
             // console.log(details.webContentsId)
-            if (details.url.substring(0, 28) === "https://example.com/callback") {
+            if (details.url.substring(0, 28) === "https://example.com/callback") { // check if auth redirect site is loaded is complete
                 var code = details.url.substring(details.url.indexOf("=") + 1, details.url.indexOf("&state"))
 
-                mainWindow.webContents.send('codeCallback', code)
+                mainWindow.webContents.send('codeCallback', code) // send the access code back to main.js where it is swapped into a access toke & a refresh token.
             }
         })
-        ipcMain.on("authWindowCloseReq", (event) => {
+        ipcMain.on("authWindowCloseReq", (event) => { // after getting access & refresh token, index.js receives request from main.js to close the auth window.
             authWindow.close()
             mainWindow.webContents.send('authWindowCloseComplete')
         })
