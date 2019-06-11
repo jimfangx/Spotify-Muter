@@ -1,0 +1,11 @@
+#basicDisplay{
+    text-align: center
+}
+.topnav {
+    background-color: #333333;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    height: 5em;
+    width: 100%
+}

@@ -23,7 +23,7 @@ var currentPlaying = ""
 var muted = false
 
 var scopes = ['user-read-currently-playing'], //part of auth process
-    redirectUri = 'https://example.com/callback',
+    redirectUri = 'http://localhost:8888',
     clientId = '936ec326b81340c5bc4beb066f267d70',
     state = state;
 
@@ -64,10 +64,6 @@ ipcRenderer.on('codeCallback', (event, code) => { // received after auth success
             //         console.log('Something went wrong!', err);
             //     });
 
-
-
-
-
             // Use a var to store current playing (ad or song name), if it new one changes from what is in variable, execute mute or unmute (so insted of every 3 seconds it runs every song change). Do in getPlaying() but outside of getmycurrentplayingtrack call.
             let previousProgress = 0
             let currentProgress = 0
@@ -84,13 +80,15 @@ ipcRenderer.on('codeCallback', (event, code) => { // received after auth success
                 })
                     .then(function (data) { // need to be able to detect an ad playing and show it -- done
                         // Output items
-                        // console.log("Now Playing: ", data);
+                        console.log("Now Playing: ", data);
 
                         currentProgress = data.body.progress_ms;
 
                         console.log(`previous progress: ${previousProgress}`)
                         console.log(`current progress: ${currentProgress}`)
+                        
                         console.log(`-------------------------------------------`)
+
                         try {
                             if (data.statusCode == 204) { // check if user is not playing anything
                                 document.getElementById('nowPlaying').innerHTML = `Nothing is playing`
@@ -103,18 +101,21 @@ ipcRenderer.on('codeCallback', (event, code) => { // received after auth success
                                     robot.keyTap("audio_mute");
                                     muted = false
                                 }
+                                console.log(`muted1: ${muted}`)
                             }
 
 
                         } catch (err) {
                             document.getElementById('nowPlaying').innerHTML = `Now Playing: ${data.body.currently_playing_type}`
-                            if (data.body.currently_playing_type === "ad" && muted === false && (previousProgress != currentProgress)) {
+                            if (data.body.currently_playing_type === "ad" && muted === false && (previousProgress != currentProgress)) { //mute if ad starts
                                 robot.keyTap("audio_mute");
                                 muted = true
                             }
                             if (previousProgress == currentProgress && muted === true) { // unmute if paused during ad
                                 robot.keyTap("audio_mute")
+                                muted = false
                             }
+                            console.log(`muted2: ${muted}`)
                             // robot.keyTap("audio_mute");
                             // currentSysVol=sysvol.getVolume()
                             // sysvol.setVolume(0).then(() => {

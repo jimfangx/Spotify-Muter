@@ -60,11 +60,11 @@ app.on('ready', () => {
         console.log(link)
         authWindow.loadURL(link);
         authWindow.show();
-
         session.defaultSession.webRequest.onCompleted((details) => { //check if a page has finished loading
             // get the cookie after redirect from the page
             // console.log(details.webContentsId)
-            if (details.url.substring(0, 28) === "https://example.com/callback") { // check if auth redirect site is loaded is complete
+            // console.log(details)
+            if (details.url.substring(0, 22) === "http://localhost:8888/") { // check if auth redirect site is loaded is complete
                 var code = details.url.substring(details.url.indexOf("=") + 1, details.url.indexOf("&state"))
 
                 mainWindow.webContents.send('codeCallback', code) // send the access code back to main.js where it is swapped into a access toke & a refresh token.
