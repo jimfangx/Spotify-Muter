@@ -25,6 +25,11 @@ app.on('ready', () => {
             nodeIntegration: true
         }
     });
+
+app.setLoginItemSettings({
+    openAsHidden: true,
+    openAtLogin: true
+})
     mainWindow.loadURL(`file://${__dirname}/main.html`)
 
     // const mainMenu = Menu.buildFromTemplate(menuTemplate);
