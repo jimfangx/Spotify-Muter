@@ -7,6 +7,7 @@ var schedule = require('node-schedule');
 var robot = require("robotjs"); //macro for non win32
 const nircmd = require('nircmd'); //macro for win32
 const os = require('os');
+var Vibrant = require('node-vibrant')
 // var { getVolume, setVolume } = require('sysvol');  
 // var robot = require("robotjs"); https://stackoverflow.com/questions/11178372/is-it-possible-to-simulate-keyboard-mouse-event-in-nodejs
 
@@ -43,6 +44,11 @@ var authorizeURL = spotifyApi.createAuthorizeURL(scopes, state); // Start author
 
 document.getElementById('status').innerHTML = "Current Status: Authorizing..."
 // document.getElementById('test').innerHTML = authorizeURL
+function millisToMinutesAndSeconds(millis) {
+    var minutes = Math.floor(millis / 60000);
+    var seconds = ((millis % 60000) / 1000).toFixed(0);
+    return (seconds == 60 ? (minutes + 1) + ":00" : minutes + ":" + (seconds < 10 ? "0" : "") + seconds);
+}
 ipcRenderer.send('windowOpenReq', authorizeURL) // requiest main process to open auth window with the auth url in var authorizeURL
 
 ipcRenderer.on('codeCallback', (event, code) => { // received after auth success then: 
@@ -57,28 +63,38 @@ ipcRenderer.on('codeCallback', (event, code) => { // received after auth success
             // Set the access token on the API object to use it in later calls
             spotifyApi.setAccessToken(data.body['access_token']);
             spotifyApi.setRefreshToken(data.body['refresh_token']);
-            tokenExpTime = new Date().getTime() / 1000 + data.body['expires_in'];
+            // tokenExpTime = new Date().getTime() / 1000 + data.body['expires_in'];
+            // tokenExpTime = tokenExpTime - new Date().getTime() / 1000; //convert from epoch to seconds
+            tokenExpTime = new Date().getTime();
+
             console.log(
-                'Retrieved token. It expires in ' +
-                Math.floor(tokenExpTime - new Date().getTime() / 1000) +
-                ' seconds!'
+                `Retrieved token. It expires in ${tokenExpTime / 1000} seconds!`
             );
             document.getElementById("status").innerHTML = "Current Status: Authorization Successful!"
             ipcRenderer.send("authWindowCloseReq") // after getting access & refresh token, sends request to close auth window to index.js
 
             //add wait for a few second to 1 min then changve status to "monitoring & blocking"
-
-            // spotifyApi.getMe()
-            //     .then(function (data) {
-            //         console.log('Some information about the authenticated user', data.body);
-            //     }, function (err) {
-            //         console.log('Something went wrong!', err);
-            //     });
+            let authUserName = ""
+            let pictureURL = ""
+            spotifyApi.getMe()
+                .then(function (data) {
+                    console.log('Some information about the authenticated user', data.body);
+                    authUserName = data.body.display_name;
+                    pictureURL = data.body.images[0].url;
+                    document.getElementById("avatar").src = pictureURL;
+                    document.getElementById("usersNameText").innerHTML = `Welcome, ${authUserName}`;
+                }, function (err) {
+                    console.log('Something went wrong!', err);
+                });
 
             // Use a var to store current playing (ad or song name), if it new one changes from what is in variable, execute mute or unmute (so insted of every 3 seconds it runs every song change). Do in getPlaying() but outside of getmycurrentplayingtrack call.
             let previousProgress = 0
             let currentProgress = 0
             var hostDeviceName = (' ' + os.hostname).slice(1).toLowerCase()
+            var tokenRefTimer = 0
+            var artists = ""
+            let colorSwatch = []
+            let paletteCopy;
             // spotifyApi.getMyCurrentPlayingTrack({
 
             // }).then(function (data) { // [0] is old
@@ -89,9 +105,10 @@ ipcRenderer.on('codeCallback', (event, code) => { // received after auth success
                 spotifyApi.getMyDevices()
                     .then(function (data1) {
                         for (var i = 0; i < data1.body.devices.length; i++) {
-                            if (data1.body.devices[0].name.toLowerCase() === hostDeviceName && data1.body.devices[parseInt(i)].is_active === true) { //&& data1.body.devices[parseInt(i)].is_active === true
+                            // console.log(data1)
+                            if (data1.body.devices[i].name.toLowerCase() === hostDeviceName && data1.body.devices[i].is_active === true) { //&& data1.body.devices[parseInt(i)].is_active === true
                                 playingOnCurrentDevice = true;
-
+                                break;
                             } else {
                                 playingOnCurrentDevice = false;
                             }
@@ -109,15 +126,90 @@ ipcRenderer.on('codeCallback', (event, code) => { // received after auth success
                     .then(function (data) { // need to be able to detect an ad playing and show it -- done
                         // Output items
                         console.log("Now Playing: ", data);
+                        tokenRefTimer = 0;
+                        console.log(`Token REF TIMER RESET: ${tokenRefTimer}`)
                         document.getElementById("status").innerHTML = "Current Status: Monitoring & Blocking"
                         if (playingOnCurrentDevice === false) {
                             if (data.statusCode == 204) { // check if user is not playing anything
                                 document.getElementById('nowPlaying').innerHTML = `Nothing is playing`
+                                document.getElementById('artist').innerHTML = ``;
+                                document.getElementById('explicit').innerHTML = ``;
+                                document.getElementById('songRunTime').innerHTML = '';
+                                document.getElementById('currentTime').innerHTML = '';
+                                document.getElementById('by').innerHTML = '';
                             } else {
-                                try {
-                                    document.getElementById('nowPlaying').innerHTML = `Now Playing: ${data.body.item.name} [NOT ON CURRENT DEVICE]`
-                                } catch (err) {
-                                    document.getElementById('nowPlaying').innerHTML = `Now Playing: ${data.body.currently_playing_type} [NOT ON CURRENT DEVICE]`
+                                try { //see if its a song
+                                    document.getElementById('nowPlaying').innerHTML = `${data.body.item.name} [NOT ON CURRENT DEVICE]`
+                                    document.getElementById("albumCover").src = data.body.item.album.images[1].url
+                                    //set background using k-means clustering
+                                    Vibrant.from(data.body.item.album.images[1].url).getPalette((err, palette) => {
+                                        console.log(palette);
+                                        colorSwatch[0] = parseInt(palette.DarkMuted.population)
+                                        colorSwatch[1] = parseInt(palette.DarkVibrant.population)
+                                        colorSwatch[2] = parseInt(palette.LightMuted.population)
+                                        colorSwatch[3] = parseInt(palette.LightVibrant.population)
+                                        colorSwatch[4] = parseInt(palette.Muted.population)
+                                        colorSwatch[5] = parseInt(palette.Vibrant.population)
+                                        console.log(`COLOR SWATCH: ${colorSwatch}`)
+                                        paletteCopy = palette;
+                                    })
+                                    let chosen = 0
+                                    console.log(Math.max.apply(Math, colorSwatch))
+                                    for (var j = 0; j < colorSwatch.length; j++) {
+                                        if (colorSwatch[j] === Math.max.apply(Math, colorSwatch)) {
+                                            chosen = j;
+                                        }
+
+                                    }
+                                    console.log(chosen)
+                                    if (chosen === 0) {
+                                        document.body.style.backgroundColor = `rgba(${paletteCopy.DarkMuted.rgb[0]}, ${paletteCopy.DarkMuted.rgb[1]}, ${paletteCopy.DarkMuted.rgb[2]}, 0.5)`
+                                        console.log("I am in 0")
+                                    } else if (chosen === 1) {
+                                        document.body.style.backgroundColor = `rgba(${paletteCopy.DarkVibrant.rgb[0]}, ${paletteCopy.DarkVibrant.rgb[1]}, ${paletteCopy.DarkVibrant.rgb[2]}, 0.5)`
+                                        console.log("I am in 1")
+                                    } else if (chosen === 2) {
+                                        document.body.style.backgroundColor = `rgba(${paletteCopy.LightMuted.rgb[0]}, ${paletteCopy.LightMuted.rgb[1]}, ${paletteCopy.LightMuted.rgb[2]}, 0.5)`
+                                        console.log("I am in 3")
+                                    } else if (chosen === 3) {
+                                        document.body.style.backgroundColor = `rgba(${paletteCopy.LightVibrant.rgb[0]}, ${paletteCopy.LightVibrant.rgb[1]}, ${paletteCopy.LightVibrant.rgb[2]}, 0.5)`
+                                        console.log("I am in 4")
+                                    } else if (chosen === 4) {
+                                        document.body.style.backgroundColor = `rgba(${paletteCopy.Muted.rgb[0]}, ${paletteCopy.Muted.rgb[1]}, ${paletteCopy.Muted.rgb[2]}, 0.5  )`
+                                        console.log("I am in 5")
+                                    } else if (chosen === 5) {
+                                        document.body.style.backgroundColor = `rgba(${paletteCopy.Vibrant.rgb[0]}, ${paletteCopy.Vibrant.rgb[1]}, ${paletteCopy.Vibrant.rgb[2]}, 0.5)`
+                                        console.log("I am in 6 Vibrant")
+                                    }
+                                    //get artists
+                                    for (var k = 0; k < data.body.item.artists.length; k++) {
+                                        if (data.body.item.artists.length - k === 1) {
+                                            artists += data.body.item.artists[k].name
+                                        } else {
+                                            artists += `${data.body.item.artists[k].name}, `
+                                        }
+                                    }
+                                    document.getElementById('artist').innerHTML = artists
+                                    artists = ""
+                                    //explicit
+                                    if (data.body.item.explicit === true) {
+                                        document.getElementById('explicit').innerHTML = `Explicit Rating by Spotify: Explicit`
+                                    } else if (data.body.item.explicit === false) {
+                                        document.getElementById('explicit').innerHTML = `Explicit Rating by Spotify: Not Explicit`
+                                    }
+                                    //run time
+                                    document.getElementById('songRunTime').innerHTML = `Duration: ${millisToMinutesAndSeconds(data.body.item.duration_ms)}`
+                                    //current time
+                                    document.getElementById('currentTime').innerHTML = `Current Progress: ${millisToMinutesAndSeconds(data.body.progress_ms)}`
+                                } catch (err) { //its an ad...
+                                    if (data.body.currently_playing_type === 'ad') {
+                                        document.getElementById('nowPlaying').innerHTML = `Spotify is currently playing an AD. [NOT ON CURRENT DEVICE]` //ad
+                                        document.getElementById('artist').innerHTML = ``;
+                                        document.getElementById('explicit').innerHTML = ``;
+                                        document.getElementById('songRunTime').innerHTML = '';
+                                        document.getElementById('currentTime').innerHTML = '';
+                                        document.getElementById('by').innerHTML = '';
+                                    }
                                 }
                             }
                         }
@@ -129,13 +221,79 @@ ipcRenderer.on('codeCallback', (event, code) => { // received after auth success
 
                             // console.log(`-------------------------------------------`)
 
-                            try {
+                            try { //see if its a song
                                 if (data.statusCode == 204) { // check if user is not playing anything
                                     document.getElementById('nowPlaying').innerHTML = `Nothing is playing`
+                                    document.getElementById('artist').innerHTML = ``;
+                                    document.getElementById('explicit').innerHTML = ``;
+                                    document.getElementById('songRunTime').innerHTML = '';
+                                    document.getElementById('currentTime').innerHTML = '';
+                                    document.getElementById('by').innerHTML = '';
                                 } else {
 
 
-                                    document.getElementById('nowPlaying').innerHTML = `Now Playing: ${data.body.item.name}`
+                                    document.getElementById('nowPlaying').innerHTML = `${data.body.item.name}`
+                                    document.getElementById("albumCover").src = data.body.item.album.images[1].url
+                                    //set background using k-means clustering
+                                    Vibrant.from(data.body.item.album.images[1].url).getPalette((err, palette) => {
+                                        console.log(palette);
+                                        colorSwatch[0] = parseInt(palette.DarkMuted.population)
+                                        colorSwatch[1] = parseInt(palette.DarkVibrant.population)
+                                        colorSwatch[2] = parseInt(palette.LightMuted.population)
+                                        colorSwatch[3] = parseInt(palette.LightVibrant.population)
+                                        colorSwatch[4] = parseInt(palette.Muted.population)
+                                        colorSwatch[5] = parseInt(palette.Vibrant.population)
+                                        console.log(`COLOR SWATCH: ${colorSwatch}`)
+                                        paletteCopy = palette;
+                                    })
+                                    let chosen = 0
+                                    console.log(Math.max.apply(Math, colorSwatch))
+                                    for (var j = 0; j < colorSwatch.length; j++) {
+                                        if (colorSwatch[j] === Math.max.apply(Math, colorSwatch)) {
+                                            chosen = j;
+                                        }
+
+                                    }
+                                    console.log(chosen)
+                                    if (chosen === 0) {
+                                        document.body.style.backgroundColor = `rgba(${paletteCopy.DarkMuted.rgb[0]}, ${paletteCopy.DarkMuted.rgb[1]}, ${paletteCopy.DarkMuted.rgb[2]}, 0.5)`
+                                        console.log("I am in 0")
+                                    } else if (chosen === 1) {
+                                        document.body.style.backgroundColor = `rgba(${paletteCopy.DarkVibrant.rgb[0]}, ${paletteCopy.DarkVibrant.rgb[1]}, ${paletteCopy.DarkVibrant.rgb[2]}, 0.5)`
+                                        console.log("I am in 1")
+                                    } else if (chosen === 2) {
+                                        document.body.style.backgroundColor = `rgba(${paletteCopy.LightMuted.rgb[0]}, ${paletteCopy.LightMuted.rgb[1]}, ${paletteCopy.LightMuted.rgb[2]}, 0.5)`
+                                        console.log("I am in 3")
+                                    } else if (chosen === 3) {
+                                        document.body.style.backgroundColor = `rgba(${paletteCopy.LightVibrant.rgb[0]}, ${paletteCopy.LightVibrant.rgb[1]}, ${paletteCopy.LightVibrant.rgb[2]}, 0.5)`
+                                        console.log("I am in 4")
+                                    } else if (chosen === 4) {
+                                        document.body.style.backgroundColor = `rgba(${paletteCopy.Muted.rgb[0]}, ${paletteCopy.Muted.rgb[1]}, ${paletteCopy.Muted.rgb[2]}, 0.5  )`
+                                        console.log("I am in 5")
+                                    } else if (chosen === 5) {
+                                        document.body.style.backgroundColor = `rgba(${paletteCopy.Vibrant.rgb[0]}, ${paletteCopy.Vibrant.rgb[1]}, ${paletteCopy.Vibrant.rgb[2]}, 0.5)`
+                                        console.log("I am in 6 Vibrant")
+                                    }
+                                    //get artists
+                                    for (var k = 0; k < data.body.item.artists.length; k++) {
+                                        if (data.body.item.artists.length - k === 1) { //last one
+                                            artists += data.body.item.artists[k].name
+                                        } else {
+                                            artists += `${data.body.item.artists[k].name}, `
+                                        }
+                                    }
+                                    document.getElementById('artist').innerHTML = artists
+                                    artists = ""
+                                    //explicit
+                                    if (data.body.item.explicit === true) {
+                                        document.getElementById('explicit').innerHTML = `Explicit Rating by Spotify: Explicit`
+                                    } else if (data.body.item.explicit === false) {
+                                        document.getElementById('explicit').innerHTML = `Explicit Rating by Spotify: Not Explicit`
+                                    }
+                                    //run time
+                                    document.getElementById('songRunTime').innerHTML = `Duration: ${millisToMinutesAndSeconds(data.body.item.duration_ms)} `
+                                    // current progress
+                                    document.getElementById('currentTime').innerHTML = `Current Progress: ${millisToMinutesAndSeconds(data.body.progress_ms)} `
                                     // robot.keyTap("audio_mute");
                                     if (data.body.item.name != "ad" && muted === true) { //unmute if ad stops playing
                                         if (process.platform === "win32") {
@@ -147,12 +305,17 @@ ipcRenderer.on('codeCallback', (event, code) => { // received after auth success
                                         }
                                         document.getElementById('blockingStatus').innerHTML = "Currently Blocking Ads: No"
                                     }
-                                    // console.log(`muted1: ${muted}`)
+                                    // console.log(`muted1: ${ muted } `)
                                 }
 
 
-                            } catch (err) {
-                                document.getElementById('nowPlaying').innerHTML = `Now Playing: ${data.body.currently_playing_type}`
+                            } catch (err) { //its an ad
+                                document.getElementById('nowPlaying').innerHTML = `Spotify is currently playing an AD.` //ad
+                                document.getElementById('artist').innerHTML = ``;
+                                document.getElementById('explicit').innerHTML = ``;
+                                document.getElementById('songRunTime').innerHTML = '';
+                                document.getElementById('currentTime').innerHTML = '';
+                                document.getElementById('by').innerHTML = '';
                                 if (data.body.currently_playing_type === "ad" && muted === false && (data.body.is_playing === true)) { //mute if ad starts previousProgress != currentProgress
                                     if (process.platform === "win32") {
                                         nircmd('nircmd muteappvolume Spotify.exe 1')
@@ -173,7 +336,7 @@ ipcRenderer.on('codeCallback', (event, code) => { // received after auth success
                                         muted = false
                                     }
                                 }
-                                // console.log(`muted2: ${muted}`)
+                                // console.log(`muted2: ${ muted } `)
                                 // robot.keyTap("audio_mute");
                                 // currentSysVol=sysvol.getVolume()
                                 // sysvol.setVolume(0).then(() => {
@@ -189,52 +352,54 @@ ipcRenderer.on('codeCallback', (event, code) => { // received after auth success
                 previousProgress = currentProgress;
                 //FIX: Access Token Refresh Loop: http://prntscr.com/o09vg6
                 // function refreshToken() { //refresh token every 3500 seconds. Expiration time is 6000 seconds or 1 hour.
-                //     spotifyApi.refreshAccessToken().then(
-                //         function (data) {
-                //             console.log('The access token has been refreshed!');
+                if (new Date().getTime() - tokenExpTime > 3500000 && tokenRefTimer == 0) {
+                    spotifyApi.refreshAccessToken().then(
+                        function (data) {
 
-                //             // Save the access token so that it's used in future calls
-                //             spotifyApi.setAccessToken(data.body['access_token']);
-                //         },
-                //         function (err) {
-                //             console.log('Could not refresh access token', err);
-                //         }
-                //     );
+
+                            // Save the access token so that it's used in future calls
+                            spotifyApi.setAccessToken(data.body['access_token']);
+                            tokenExpTime = new Date().getTime();
+                            console.log(`The access token has been refreshed! EXP in ${tokenExpTime} `);
+                            tokenRefTimer++;
+                        },
+                        function (err) {
+                            console.log('Could not refresh access token', err);
+                        }
+                    );
+                }
                 // }
                 // setInterval(refreshToken, 3500 * 1000)
 
-                setInterval(function () {
-                    // console.log( // !!! ENABLE FOR LOGGING OF TOKEN EXP TIMES
-                    //     'Time left: ' +
-                    //     Math.floor(tokenExpTime - new Date().getTime() / 1000) +
-                    //     ' seconds left!'
-                    // );
 
-                    // OK, we need to refresh the token. Stop printing and refresh.
-                    if (++numberOfTimesUpdated > 5) {
-                        clearInterval(this);
-
-                        // Refresh token and print the new time to expiration.
-                        if (tokenExpTime < 500) {
-                            spotifyApi.refreshAccessToken().then(
-                                function (data) {
-                                    tokenExpTime =
-                                        new Date().getTime() / 1000 + data.body['expires_in'];
-                                    console.log(
-                                        'Refreshed token. It now expires in ' +
-                                        Math.floor(tokenExpTime - new Date().getTime() / 1000) +
-                                        ' seconds!'
-                                    );
-                                },
-                                function (err) {
-                                    console.log('Could not refresh the token!', err.message);
-                                }
-                            );
-                        }
-                    }
-                }, 1000);
+                console.log(`Token expires in ${Math.round(3600 - (Math.abs(new Date().getTime() / 1000 - tokenExpTime / 1000)))} `)
 
 
+                // console.log( // !!! ENABLE FOR LOGGING OF TOKEN EXP TIMES
+                //     'Time left: ' +
+                //     Math.floor(tokenExpTime - new Date().getTime() / 1000) +
+                //     ' seconds left!'
+                // );
+
+                // OK, we need to refresh the token. Stop printing and refresh.
+
+                // Refresh token and print the new time to expiration.
+                // if (tokenExpTime < 500 && tokenRefTimer == 0) {
+                //     spotifyApi.refreshAccessToken().then(
+                //         function (data) {
+                //             tokenExpTime = new Date().getTime() / 1000 + data.body['expires_in'];
+                //             tokenExpTime = tokenExpTime - new Date().getTime() / 1000; //convert from epoch to seconds
+                //             console.log(
+                //                 `Refreshed token.It now expires in ${ tokenExpTime } seconds!`
+                //             );
+                //             tokenRefTimer++;
+                //             console.log(`TOKENREFTIMER ${ tokenRefTimer } `)
+                //         },
+                //         function (err) {
+                //             console.log('Could not refresh the token!', err.message);
+                //         }
+                //     );
+                // }
             }
             setInterval(getPlaying, 1 * 1000) //end of get playing
 
@@ -322,7 +487,7 @@ console.log("I AM OUT OF THE CALLBACK FUNC")
  // Watching for submit event in form tags
 
     // ipcRenderer.on('duration:sent', (event, duration) => {
-    //     document.querySelector('#result').innerHTML = `Video is ${duration} seconds`;
+    //     document.querySelector('#result').innerHTML = `Video is ${ duration } seconds`;
     // })
 
 

@@ -1,5 +1,10 @@
-#basicDisplay{
+/* #basicDisplay{
     text-align: center
+} */
+html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
 }
 .topnav {
     background-color: #333333;
@@ -9,3 +14,82 @@
     height: 5em;
     width: 100%
 }
+#status{
+    text-align: center;
+}
+#avatarImg{
+    padding-top: 15px;
+    padding-left: 65%; 
+}
+#avatar {
+    vertical-align: middle;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-position: right 100px top;
+}
+#usersName{
+   /* padding-left: 90%; */
+   position: relative;
+   left: 74%;
+   top: -53px;
+   overflow: hidden;
+}
+#usersNameText{
+    color: white;
+    /* padding-left: 80px;
+    padding-top: -15px; */
+    text-align: left;
+    overflow: hidden;
+}
+#albumCover{
+    padding-left: 15%;
+    overflow: hidden;
+}
+#songInfo{
+    padding-left: 60%;
+    /* padding-right: 20px; */
+    padding-right: 7%;
+    position: relative;
+    text-align: center;
+    top: -325px;
+}
+#nowPlaying {
+    margin-bottom: 0.5em;
+}
+#by{
+    margin-top: 0;
+    margin-bottom: 0;
+}
+#artist{
+    margin-top: 0.5em;
+}
+#programName{
+    position: relative;
+    top: -128px;
+    width: 200px;
+    overflow: hidden;
+}
+#programNameText{
+    color: white;
+    text-align: center;
+    overflow: hidden;
+    font-size: 30px;
+}
+/* body {
+    background: rgba(250, 172, 25, 0.5)
+} */
+/* #by {
+    margin-top: 0;
+    margin-bottom: 0;
+} */
+/* #artist{
+    padding-left: 60%;
+    position: relative;
+    text-align: center;
+    top: -300px;
+} */
+/* *{
+    margin: 0%;
+} */
+  

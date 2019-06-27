@@ -25,6 +25,8 @@ app.on('ready', () => {
             nodeIntegration: true
         }
     });
+    // mainWindow.setResizable(false)
+    // mainWindow.setMenu(null)
 
 app.setLoginItemSettings({
     openAsHidden: true,

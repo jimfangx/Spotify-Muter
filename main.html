@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Spotify Muter</title>
+    <title>SpotiMuter</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="style.css">
     <!-- <link rel="stylesheet" type="text/css" media="screen" href="main.css">
@@ -13,16 +13,36 @@
 
 <body>
     <div class="topnav">
-    
+        <!-- avatar -->
+        <div id="avatarImg">
+            <img src="img_avatar.png" alt="Avatar" id="avatar" class="avatar">
+        </div>
+
+        <div id="usersName">
+            <h3 id="usersNameText"></h3>
+        </div>
+        <div id="programName">
+            <h2 id="programNameText">SpotiMuter</h2>
+        </div>
     </div>
-    <div id="basicDisplay">
+
+    <div id="bottomSection">
         <!-- <button type="submit" id="spotifyAuthSubmit">Submit</button> -->
         <h2 id="status">Status: </h2>
-        <h3 id="nowPlaying">Now Playing: </h3>
-        <h4 id="blockingStatus">Currently Blocking Ads: No</h4>
-
-        <!-- class="btn btn-primary" -->
+        <img src="./placeholder.jpg" alt="imageCover" id="albumCover">
+        <div id="songInfo">
+            <h2 id="nowPlaying"></h2>
+            <h4 id="by">by</h4>
+            <h3 id="artist"></h3>
+            <h4 id="explicit"></h4>
+            <h4 id="songRunTime"></h4>
+            <h4 id="currentTime"></h4>
+            <h4 id="blockingStatus">Currently Blocking Ads: No</h4>
+        </div>
     </div>
+
+    <!-- class="btn btn-primary" -->
+
     <script src="./main.js"></script>
 </body>
 
