@@ -1,4 +1,4 @@
-fs.readFile('bin.txt', function (err, key) {
+fs.readFile('bin.bin', function (err, key) {
     console.log("in main.js")
     var request = require('request')
     const electron = require('electron')
