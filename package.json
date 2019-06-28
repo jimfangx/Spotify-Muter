@@ -15,6 +15,7 @@
   "license": "MIT",
   "devDependencies": {},
   "dependencies": {
+    "aes-cross": "^1.0.9",
     "electron": "^4.2.0",
     "nircmd": "^2.0.0",
     "node-gyp": "^4.0.0",

@@ -5,7 +5,9 @@ var config = require('./config.json')
 var querystring = require('querystring');
 /* Load the HTTP library */
 var http = require("http");
-
+var appConfig = require('./appConfig.json')
+var fs = require('fs')
+var aes = require('aes-cross');
 let mainWindow;
 
 
@@ -25,14 +27,33 @@ app.on('ready', () => {
             nodeIntegration: true
         }
     });
-    // mainWindow.setResizable(false)
-    // mainWindow.setMenu(null)
 
-app.setLoginItemSettings({
-    openAsHidden: true,
-    openAtLogin: true
-})
+    mainWindow.setResizable(false)
+    mainWindow.setMenu(null)
+    mainWindow.setAlwaysOnTop(appConfig.sticky)
+
+
+    app.setLoginItemSettings({
+        openAsHidden: true,
+        openAtLogin: true
+    })
     mainWindow.loadURL(`file://${__dirname}/main.html`)
+
+
+
+    // var key = new Buffer([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5, 6]);
+    // console.log(key)
+    // fs.writeFile("bin.txt", key, "binary", function (err) {
+    //     if (err) {
+    //         console.log(err);
+    //     } else {
+    //         console.log("The file was saved!");
+    //         var enc = aes.encText(config.clientSecret, key)
+    //         console.log(enc);
+    //     }
+    // });
+
+    // mainWindow.webContents.send('codeDecode', aes.decText(config.clientSecret, key))
 
     // const mainMenu = Menu.buildFromTemplate(menuTemplate);
     // Menu.setApplicationMenu(mainMenu)
@@ -59,6 +80,16 @@ app.setLoginItemSettings({
     //     return text;
     // };
     // var state = generateRandomString(16);
+
+    
+    // fs.readFile('bin.txt', function (err, key) {
+    //     if (err) throw err;
+    //     console.log(key);
+    //     console.log(aes.decText(config.clientSecret, key))
+    //     var clientSecret = aes.decText(config.clientSecret, key)
+    //     mainWindow.webContents.send('secretDecode', clientSecret)
+    // })
+
     ipcMain.on("windowOpenReq", (event, link) => { // listnes for auth window open request from main.js. Uses "link" which is the auth link to open a window
 
         var authWindow = new BrowserWindow({ width: 800, height: 600, show: false, 'node-integration': false }); // open auth window

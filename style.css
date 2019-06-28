@@ -16,9 +16,12 @@ html, body {
 }
 #status{
     text-align: center;
+    font-size: xx-large;
+    margin-top: 20px;
+    margin-bottom: 20px
 }
 #avatarImg{
-    padding-top: 15px;
+    padding-top: 12px;
     padding-left: 65%; 
 }
 #avatar {
@@ -32,7 +35,7 @@ html, body {
    /* padding-left: 90%; */
    position: relative;
    left: 74%;
-   top: -53px;
+   top: -68px;
    overflow: hidden;
 }
 #usersNameText{
@@ -41,6 +44,9 @@ html, body {
     padding-top: -15px; */
     text-align: left;
     overflow: hidden;
+    font-size: 1.5rem;
+    height: auto;
+    line-height: normal;
 }
 #albumCover{
     padding-left: 15%;
@@ -49,24 +55,57 @@ html, body {
 #songInfo{
     padding-left: 60%;
     /* padding-right: 20px; */
+    padding-top: 13px;
     padding-right: 7%;
     position: relative;
     text-align: center;
-    top: -325px;
+    top: -310px;
 }
 #nowPlaying {
-    margin-bottom: 0.5em;
-}
-#by{
     margin-top: 0;
     margin-bottom: 0;
+    font-size: 2rem;
 }
+/* #by{
+    margin-top: 0;
+    margin-bottom: 0;
+    font-size: 1.5rem;
+} */
 #artist{
-    margin-top: 0.5em;
+    /* margin-top: 0.5em; */
+    font-size: 1.5rem;
+    line-height: normal;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+#explicit{
+    font-size: large;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+#songRunTime{
+    font-size: large;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+#currentTime{
+    font-size: large;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+#blockingStatus{
+    font-size: large;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+#sticky{
+    font-size: large;
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 #programName{
     position: relative;
-    top: -128px;
+    top: -151px;
     width: 200px;
     overflow: hidden;
 }
@@ -76,6 +115,20 @@ html, body {
     overflow: hidden;
     font-size: 30px;
 }
+#buttonControls {
+    text-align: center;
+    left: 120px;
+    position: fixed;
+    top: 485px;
+}
+#toggleAdBlock{
+    margin-left: 0px;
+    margin-right: 50px;
+}
+#toggleSticky{
+    margin-left: 50px;
+}
+
 /* body {
     background: rgba(250, 172, 25, 0.5)
 } */
