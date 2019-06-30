@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>SpotiMuter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- <link rel="stylesheet" type="text/css" media="screen" href="main.css">
+    <script src="main.js"></script> -->
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!--Import materialize.css-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+
+    <link rel="stylesheet" href="style.css">
+    <!--Let browser know website is optimized for mobile-->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+
+<body>
+    <!-- <script type="text/javascript" src="js/materialize.min.js"></script> -->
+    <div class="topnav">
+        <!-- avatar -->
+        <div id="avatarImg">
+            <img src="" alt="Avatar" id="avatar" class="avatar">
+        </div>
+
+        <div id="usersName">
+            <h3 id="usersNameText"></h3>
+        </div>
+        <div id="programName">
+            <h2 id="programNameText">SpotiMuter</h2>
+        </div>
+    </div>
+
+    <div id="bottomSection">
+        <!-- <button type="submit" id="spotifyAuthSubmit">Submit</button> -->
+        <h2 id="status">Status: </h2>
+        <img src="./placeholder.jpg" alt="imageCover" id="albumCover">
+        <div id="songInfo">
+            <h2 id="nowPlaying"></h2>
+            <!-- <h4 id="by">by</h4> -->
+            <h3 id="artist"></h3>
+
+            <h4 id="explicit"></h4>
+            <h4 id="songRunTime"></h4>
+            <h4 id="currentTime"></h4>
+            <h4 id="blockingStatus">Currently Blocking Ads: </h4>
+            <h4 id="sticky">Is app sticky: </h4>
+
+        </div>
+        <div id="buttonControls">
+            <button id="toggleAdBlock" onclick="adBlockToggle()" class="waves-effect waves-light btn">Toggle AD
+                Block</button>
+            <button id="toggleSticky" onclick="stickyToggle()" class="waves-effect waves-light btn">Toggle app
+                stickyness (Requires app restart)</button>
+        </div>
+        <script src="./configManager.js"></script>
+        <!-- DEV: ./configManager.js -->
+    </div>
+
+    <!-- class="btn btn-primary" -->
+
+    <script src="./main.js"></script>
+    <!-- DEV: ./main.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+</body>
+
+</html>

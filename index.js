@@ -14,7 +14,7 @@ let mainWindow;
 
 /* Create an HTTP server to handle responses */
 
-http.createServer(function (request, response) {
+var authServer = http.createServer(function (request, response) {
     response.writeHead(200, { "Content-Type": "text/plain" });
     response.write("Authorization Successful - This window will close automatically, if it does not in 3 seconds, please close this window.");
     response.end();
@@ -31,6 +31,7 @@ app.on('ready', () => {
     mainWindow.setResizable(false)
     mainWindow.setMenu(null)
     mainWindow.setAlwaysOnTop(appConfig.sticky)
+    // mainWindow.webContents.openDevTools()
 
 
     app.setLoginItemSettings({
@@ -81,7 +82,7 @@ app.on('ready', () => {
     // };
     // var state = generateRandomString(16);
 
-    
+
     // fs.readFile('bin.txt', function (err, key) {
     //     if (err) throw err;
     //     console.log(key);
@@ -111,6 +112,7 @@ app.on('ready', () => {
         ipcMain.on("authWindowCloseReq", (event) => { // after getting access & refresh token, index.js receives request from main.js to close the auth window.
             authWindow.close()
             mainWindow.webContents.send('authWindowCloseComplete')
+            authServer.close();
         })
     })
 

@@ -1,9 +1,12 @@
-fs.readFile('bin.bin', function (err, key) {
-    console.log("in main.js")
+var fs = require('fs');
+fs.readFile('./resources/app/bin.bin', function (err, key) {
+    // DEV bin.bin
+    // console.log("in main.js")
     var request = require('request')
     const electron = require('electron')
     const { ipcRenderer } = electron;
     var config = require('./config.json')
+    // dev ./config.json
     var appConfig = require('./appConfig.json')
     var SpotifyWebApi = require('spotify-web-api-node');
     var schedule = require('node-schedule');
@@ -40,9 +43,9 @@ fs.readFile('bin.bin', function (err, key) {
     var playingOnCurrentDevice = false;
 
 
-    if (err) throw err;
-    console.log(key);
-    console.log(aes.decText(config.clientSecret, key))
+    // if (err) throw err;
+    // console.log(key);
+    // console.log(aes.decText(config.clientSecret, key))
 
 
     // ipcRenderer.on('secretDecode', (event, clientSecret) => {
@@ -160,9 +163,10 @@ fs.readFile('bin.bin', function (err, key) {
                     })
                         .then(function (data) { // need to be able to detect an ad playing and show it -- done
                             // Output items
-                            console.log("Now Playing: ", data);
+
+                            // console.log("Now Playing: ", data);
                             tokenRefTimer = 0;
-                            console.log(`Token REF TIMER RESET: ${tokenRefTimer}`)
+                            // console.log(`Token REF TIMER RESET: ${tokenRefTimer}`)
                             document.getElementById("status").innerHTML = "Current Status: Monitoring & Blocking"
                             if (playingOnCurrentDevice === false) {
                                 if (data.statusCode == 204) { // check if user is not playing anything
@@ -189,7 +193,7 @@ fs.readFile('bin.bin', function (err, key) {
                                             colorSwatch[3] = parseInt(palette.LightVibrant.population)
                                             colorSwatch[4] = parseInt(palette.Muted.population)
                                             colorSwatch[5] = parseInt(palette.Vibrant.population)
-                                            console.log(`COLOR SWATCH: ${colorSwatch}`)
+                                            // console.log(`COLOR SWATCH: ${colorSwatch}`)
                                             paletteCopy = palette;
                                         })
                                         let chosen = 0
@@ -200,25 +204,25 @@ fs.readFile('bin.bin', function (err, key) {
                                             }
 
                                         }
-                                        console.log(chosen)
+                                        // console.log(chosen)
                                         if (chosen === 0) {
                                             document.body.style.backgroundColor = `rgba(${paletteCopy.DarkMuted.rgb[0]}, ${paletteCopy.DarkMuted.rgb[1]}, ${paletteCopy.DarkMuted.rgb[2]}, 0.5)`
-                                            console.log("I am in 0")
+                                            // console.log("I am in 0")
                                         } else if (chosen === 1) {
                                             document.body.style.backgroundColor = `rgba(${paletteCopy.DarkVibrant.rgb[0]}, ${paletteCopy.DarkVibrant.rgb[1]}, ${paletteCopy.DarkVibrant.rgb[2]}, 0.5)`
-                                            console.log("I am in 1")
+                                            // console.log("I am in 1")
                                         } else if (chosen === 2) {
                                             document.body.style.backgroundColor = `rgba(${paletteCopy.LightMuted.rgb[0]}, ${paletteCopy.LightMuted.rgb[1]}, ${paletteCopy.LightMuted.rgb[2]}, 0.5)`
-                                            console.log("I am in 3")
+                                            // console.log("I am in 3")
                                         } else if (chosen === 3) {
                                             document.body.style.backgroundColor = `rgba(${paletteCopy.LightVibrant.rgb[0]}, ${paletteCopy.LightVibrant.rgb[1]}, ${paletteCopy.LightVibrant.rgb[2]}, 0.5)`
-                                            console.log("I am in 4")
+                                            // console.log("I am in 4")
                                         } else if (chosen === 4) {
                                             document.body.style.backgroundColor = `rgba(${paletteCopy.Muted.rgb[0]}, ${paletteCopy.Muted.rgb[1]}, ${paletteCopy.Muted.rgb[2]}, 0.5  )`
-                                            console.log("I am in 5")
+                                            // console.log("I am in 5")
                                         } else if (chosen === 5) {
                                             document.body.style.backgroundColor = `rgba(${paletteCopy.Vibrant.rgb[0]}, ${paletteCopy.Vibrant.rgb[1]}, ${paletteCopy.Vibrant.rgb[2]}, 0.5)`
-                                            console.log("I am in 6 Vibrant")
+                                            // console.log("I am in 6 Vibrant")
                                         }
                                         //get artists
                                         for (var k = 0; k < data.body.item.artists.length; k++) {
@@ -289,7 +293,7 @@ fs.readFile('bin.bin', function (err, key) {
                                             colorSwatch[3] = parseInt(palette.LightVibrant.population)
                                             colorSwatch[4] = parseInt(palette.Muted.population)
                                             colorSwatch[5] = parseInt(palette.Vibrant.population)
-                                            console.log(`COLOR SWATCH: ${colorSwatch}`)
+                                            // console.log(`COLOR SWATCH: ${colorSwatch}`)
                                             paletteCopy = palette;
                                         })
                                         let chosen = 0
@@ -300,25 +304,25 @@ fs.readFile('bin.bin', function (err, key) {
                                             }
 
                                         }
-                                        console.log(chosen)
+                                        // console.log(chosen)
                                         if (chosen === 0) {
                                             document.body.style.backgroundColor = `rgba(${paletteCopy.DarkMuted.rgb[0]}, ${paletteCopy.DarkMuted.rgb[1]}, ${paletteCopy.DarkMuted.rgb[2]}, 0.5)`
-                                            console.log("I am in 0")
+                                            // console.log("I am in 0")
                                         } else if (chosen === 1) {
                                             document.body.style.backgroundColor = `rgba(${paletteCopy.DarkVibrant.rgb[0]}, ${paletteCopy.DarkVibrant.rgb[1]}, ${paletteCopy.DarkVibrant.rgb[2]}, 0.5)`
-                                            console.log("I am in 1")
+                                            // console.log("I am in 1")
                                         } else if (chosen === 2) {
                                             document.body.style.backgroundColor = `rgba(${paletteCopy.LightMuted.rgb[0]}, ${paletteCopy.LightMuted.rgb[1]}, ${paletteCopy.LightMuted.rgb[2]}, 0.5)`
-                                            console.log("I am in 3")
+                                            // console.log("I am in 3")
                                         } else if (chosen === 3) {
                                             document.body.style.backgroundColor = `rgba(${paletteCopy.LightVibrant.rgb[0]}, ${paletteCopy.LightVibrant.rgb[1]}, ${paletteCopy.LightVibrant.rgb[2]}, 0.5)`
-                                            console.log("I am in 4")
+                                            // console.log("I am in 4")
                                         } else if (chosen === 4) {
                                             document.body.style.backgroundColor = `rgba(${paletteCopy.Muted.rgb[0]}, ${paletteCopy.Muted.rgb[1]}, ${paletteCopy.Muted.rgb[2]}, 0.5  )`
-                                            console.log("I am in 5")
+                                            // console.log("I am in 5")
                                         } else if (chosen === 5) {
                                             document.body.style.backgroundColor = `rgba(${paletteCopy.Vibrant.rgb[0]}, ${paletteCopy.Vibrant.rgb[1]}, ${paletteCopy.Vibrant.rgb[2]}, 0.5)`
-                                            console.log("I am in 6 Vibrant")
+                                            // console.log("I am in 6 Vibrant")
                                         }
                                         //get artists
                                         for (var k = 0; k < data.body.item.artists.length; k++) {
@@ -379,7 +383,7 @@ fs.readFile('bin.bin', function (err, key) {
                                             if (process.platform === "win32") {
                                                 // nircmd('nircmd muteappvolume Spotify.exe 0')
                                                 // muted = false
-                                                console.log('Win - Does not require unmuting')
+                                                // console.log('Win - Does not require unmuting')
                                             } else {
                                                 robot.keyTap("audio_mute")
                                                 muted = false
@@ -429,8 +433,8 @@ fs.readFile('bin.bin', function (err, key) {
                     // }
                     // setInterval(refreshToken, 3500 * 1000)
 
-
-                    console.log(`Token expires in ${Math.round(3600 - (Math.abs(new Date().getTime() / 1000 - tokenExpTime / 1000)))} `)
+                    // DEV IMPORTENT
+                    // console.log(`Token expires in ${Math.round(3600 - (Math.abs(new Date().getTime() / 1000 - tokenExpTime / 1000)))} `)
 
 
                     // console.log( // !!! ENABLE FOR LOGGING OF TOKEN EXP TIMES
@@ -461,7 +465,7 @@ fs.readFile('bin.bin', function (err, key) {
                 }
                 setInterval(getPlaying, 1 * 1000) //end of get playing
 
-                console.log(`jsaslfjaslfjlasjfl OuT OF TIMED FUNCTION`)
+                // console.log(`jsaslfjaslfjlasjfl OuT OF TIMED FUNCTION`)
             },
             function (err) {
                 console.log('Something went wrong!', err);
@@ -501,9 +505,9 @@ fs.readFile('bin.bin', function (err, key) {
 
 
     })
-    console.log("I AM OUT OF THE CALLBACK FUNC")
+    // console.log("I AM OUT OF THE CALLBACK FUNC")
     // });
-    console.log('Not authorized')
+    // console.log('Not authorized')
     //as soom as someone submits something, this triggers
 })
 
