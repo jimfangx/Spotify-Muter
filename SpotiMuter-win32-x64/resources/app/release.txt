@@ -1,8 +1,0 @@
-WIN:
-electron-packager . SpotiMuter --icon="./devAppLogo.ico" --version-string.ProductName="SpotiMuter"
-
-_OSX:
-electron-packager . SpotiMuter --icon="./devAppLogo.jpg" --version-string.ProductName="SpotiMuter"
-electron-packager . --version-string.ProductName="SpotiMuter"
-
-DO NOT USE: electron-packager ./ --platform=win32 --arch=x64 --asar --overwrite --out 
