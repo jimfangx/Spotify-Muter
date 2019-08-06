@@ -8,9 +8,12 @@ var http = require("http");
 var appConfig = require('./appConfig.json')
 var fs = require('fs')
 var aes = require('aes-cross');
+var AutoLaunch = require('auto-launch');
 let mainWindow;
 
-
+var spotiMuterAutoLauncher = new AutoLaunch({
+    name: 'SpotiMuter'
+});
 
 /* Create an HTTP server to handle responses */
 
@@ -20,18 +23,26 @@ var authServer = http.createServer(function (request, response) {
     response.end();
 }).listen(8888);
 
+//prevent app throttling / sleeping in background
+app.commandLine.appendSwitch('disable-renderer-backgrounding')
+
 app.on('ready', () => {
     console.log(`I am ready @ ${Date()}`)
     mainWindow = new BrowserWindow({
         webPreferences: {
-            nodeIntegration: true
+            nodeIntegration: true,
+            backgroundThrottling: false // prevent background sleeping
         }
     });
 
-    mainWindow.setResizable(false)
     mainWindow.setMenu(null)
     mainWindow.setAlwaysOnTop(appConfig.sticky)
-    // mainWindow.webContents.openDevTools()
+    if (config.devMode === true) {
+        mainWindow.webContents.openDevTools()
+        mainWindow.setResizable(true)
+    } else if (config.devMode === false) {
+        mainWindow.setResizable(false)
+    }
 
 
     app.setLoginItemSettings({

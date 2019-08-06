@@ -1,11 +1,25 @@
 var fs = require('fs');
-fs.readFile('./resources/app/bin.bin', function (err, key) {
+var config = require('./config.json')
+var filePath = ""
+
+if (config.devMode === true) {
+    filePath = "bin.bin"
+}
+else if (process.platform === "win32") {
+    filePath = process.execPath.substring(0,process.execPath.indexOf("SpotiMuter.exe")) + "resources\\app\\bin.bin"
+} else if (process.platform === "darwin") {
+    filePath = "./contents/resources/app/bin.bin"
+}
+console.log(filePath)
+fs.readFile(filePath, function (err, key) {
     // DEV bin.bin
-    // console.log("in main.js")
+    // WIN ./resources/app/bin.bin ./SpotiMuter-win32-x64
+    // MAC ./contents/resources/app/bin.bin
+    // /Users/jim/Documents/Spotify Muter/spotify-muter-darwin-x64/spotify-muter.app/Contents/Resources/app/bin.bin (spotify-muter.app)
+
     var request = require('request')
     const electron = require('electron')
     const { ipcRenderer } = electron;
-    var config = require('./config.json')
     // dev ./config.json
     var appConfig = require('./appConfig.json')
     var SpotifyWebApi = require('spotify-web-api-node');
@@ -15,6 +29,10 @@ fs.readFile('./resources/app/bin.bin', function (err, key) {
     const os = require('os');
     var aes = require('aes-cross');
     var Vibrant = require('node-vibrant')
+    const { exec } = require('child_process');
+    var cmd = require('node-cmd');
+    const loudness = require('mwl-loudness')
+    console.log(key)
     // var { getVolume, setVolume } = require('sysvol');  
     // var robot = require("robotjs"); https://stackoverflow.com/questions/11178372/is-it-possible-to-simulate-keyboard-mouse-event-in-nodejs
 
@@ -26,6 +44,14 @@ fs.readFile('./resources/app/bin.bin', function (err, key) {
             text += possible.charAt(Math.floor(Math.random() * possible.length));
         }
         return text;
+    };
+    const doExec = (cmd, opts = {}) => {
+        return new Promise((resolve, reject) => {
+            exec(cmd, opts, (err, stdout, stderr) => {
+                if (err) return reject({ stdout, stderr });
+                resolve(stdout);
+            });
+        });
     };
     var state = generateRandomString(16);
     // fs.readFile('/etc/passwd', function (err, data) {
@@ -41,7 +67,15 @@ fs.readFile('./resources/app/bin.bin', function (err, key) {
     var numberOfTimesUpdated = 0;
     var muted = false
     var playingOnCurrentDevice = false;
-
+    if (process.platform == "darwin") {
+        loudness.getMuted().then((adMuted) => {
+            console.log("AD MUTE START" + adMuted)
+            muted = adMuted;
+        })
+    } else if (process.platform === "win32") {
+        nircmd('nircmd muteappvolume Spotify.exe 0')
+        muted = false;
+    }
 
     // if (err) throw err;
     // console.log(key);
@@ -93,7 +127,7 @@ fs.readFile('./resources/app/bin.bin', function (err, key) {
         // console.log(code)
 
         spotifyApi.authorizationCodeGrant(code).then( // then: gets access & refresh token using the code returned.
-            function (data) {
+            async function (data) {
                 // console.log('The token expires in ' + data.body['expires_in']);
                 // console.log('The access token is ' + data.body['access_token']);
                 // console.log('The refresh token is ' + data.body['refresh_token']);
@@ -128,22 +162,24 @@ fs.readFile('./resources/app/bin.bin', function (err, key) {
                 // Use a var to store current playing (ad or song name), if it new one changes from what is in variable, execute mute or unmute (so insted of every 3 seconds it runs every song change). Do in getPlaying() but outside of getmycurrentplayingtrack call.
                 let previousProgress = 0
                 let currentProgress = 0
-                var hostDeviceName = (' ' + os.hostname).slice(1).toLowerCase()
+                var hostDeviceName = ""
+                if (process.platform === 'darwin') {
+                    hostDeviceName = await doExec('scutil --get ComputerName');
+                    hostDeviceName = (' ' + hostDeviceName).slice(1).toLowerCase()
+                    hostDeviceName = hostDeviceName.replace(/(\r\n|\n|\r)/gm, "");
+                } else {
+                    hostDeviceName = (' ' + os.hostname).slice(1).toLowerCase()
+                }
+                console.log(`HOST DEVICE NAME ${hostDeviceName}`)
                 var tokenRefTimer = 0
                 var artists = ""
                 let colorSwatch = []
                 let paletteCopy;
-                // spotifyApi.getMyCurrentPlayingTrack({
-
-                // }).then(function (data) { // [0] is old
-                //     previousProgress = data.body.progress_ms;
-                // })
 
                 function getPlaying() { // get current playing every 3 seconds, and updates HTML.
                     spotifyApi.getMyDevices()
                         .then(function (data1) {
                             for (var i = 0; i < data1.body.devices.length; i++) {
-                                // console.log(data1)
                                 if (data1.body.devices[i].name.toLowerCase() === hostDeviceName && data1.body.devices[i].is_active === true) { //&& data1.body.devices[parseInt(i)].is_active === true
                                     playingOnCurrentDevice = true;
                                     break;
@@ -155,11 +191,10 @@ fs.readFile('./resources/app/bin.bin', function (err, key) {
                         }, function (err) {
                             console.error(err);
                         });
-                    // spotifyApi.getMyDevices().then(function (data1) {
                     //     console.log(`Device Data: ${data1.body}`)
 
 
-                    spotifyApi.getMyCurrentPlayingTrack({ // Currently throwing 401
+                    spotifyApi.getMyCurrentPlayingTrack({
                     })
                         .then(function (data) { // need to be able to detect an ad playing and show it -- done
                             // Output items
@@ -168,7 +203,7 @@ fs.readFile('./resources/app/bin.bin', function (err, key) {
                             tokenRefTimer = 0;
                             // console.log(`Token REF TIMER RESET: ${tokenRefTimer}`)
                             document.getElementById("status").innerHTML = "Current Status: Monitoring & Blocking"
-                            if (playingOnCurrentDevice === false) {
+                            if (playingOnCurrentDevice === false) { // not playing on current device
                                 if (data.statusCode == 204) { // check if user is not playing anything
                                     document.getElementById('nowPlaying').innerHTML = `Nothing is playing`
                                     document.getElementById('artist').innerHTML = ``;
@@ -178,9 +213,37 @@ fs.readFile('./resources/app/bin.bin', function (err, key) {
                                     document.getElementById("albumCover").src = './placeholder.jpg'
                                     document.body.style.backgroundColor = `rgb(255,255,255)`
                                     document.body.style.backgroundImage = `url('./background.jpg')`
+
+                                    document.getElementById('nowPlaying').style.fontSize = "2rem"
+                                    document.getElementById('artist').style.fontSize = "1.5rem"
+                                    document.getElementById('explicit').style.fontSize = "large"
+                                    document.getElementById('songRunTime').style.fontSize = "large"
+                                    document.getElementById('currentTime').style.fontSize = "large"
+                                    document.getElementById('blockingStatus').style.fontSize = "large"
+                                    document.getElementById('sticky').style.fontSize = "large"
                                 } else {
                                     try { //see if its a song
-                                        document.getElementById('nowPlaying').innerHTML = `${data.body.item.name} [NOT ON CURRENT DEVICE]`
+                                        console.log('LEN' + data.body.item.name.length)
+                                        if (data.body.item.name.length > 31) {
+                                            document.getElementById('nowPlaying').innerHTML = `${data.body.item.name} [NOT ON CURRENT DEVICE]`
+                                            document.getElementById('nowPlaying').style.fontSize = "1.3rem"
+                                            document.getElementById('artist').style.fontSize = "medium"
+                                            document.getElementById('explicit').style.fontSize = "medium"
+                                            document.getElementById('songRunTime').style.fontSize = "medium"
+                                            document.getElementById('currentTime').style.fontSize = "medium"
+                                            document.getElementById('blockingStatus').style.fontSize = "medium"
+                                            document.getElementById('sticky').style.fontSize = "medium"
+                                            console.log("Font changed")
+                                        } else {
+                                            document.getElementById('nowPlaying').innerHTML = `${data.body.item.name} [NOT ON CURRENT DEVICE]`
+                                            document.getElementById('nowPlaying').style.fontSize = "2rem"
+                                            document.getElementById('artist').style.fontSize = "1.5rem"
+                                            document.getElementById('explicit').style.fontSize = "large"
+                                            document.getElementById('songRunTime').style.fontSize = "large"
+                                            document.getElementById('currentTime').style.fontSize = "large"
+                                            document.getElementById('blockingStatus').style.fontSize = "large"
+                                            document.getElementById('sticky').style.fontSize = "large"
+                                        }
                                         document.getElementById("albumCover").src = data.body.item.album.images[1].url
                                         // remove background img
                                         document.body.style.backgroundImage = ``
@@ -247,6 +310,7 @@ fs.readFile('./resources/app/bin.bin', function (err, key) {
                                     } catch (err) { //its an ad... on another device
                                         if (data.body.currently_playing_type === 'ad') {
                                             document.getElementById('nowPlaying').innerHTML = `Spotify is currently playing an AD. [NOT ON CURRENT DEVICE]` //ad
+                                            document.getElementById('nowPlaying').style.fontSize = "2rem"
                                             document.getElementById('artist').innerHTML = ``;
                                             document.getElementById('explicit').innerHTML = ``;
                                             document.getElementById('songRunTime').innerHTML = '';
@@ -254,17 +318,22 @@ fs.readFile('./resources/app/bin.bin', function (err, key) {
                                             document.body.style.backgroundColor = `rgb(255,255,255)`
                                             document.body.style.backgroundImage = `url('./background.jpg')`
                                             document.getElementById("albumCover").src = './adholder.png'
+                                            document.getElementById('artist').style.fontSize = "1.5rem"
+                                            document.getElementById('explicit').style.fontSize = "large"
+                                            document.getElementById('songRunTime').style.fontSize = "large"
+                                            document.getElementById('currentTime').style.fontSize = "large"
+                                            document.getElementById('blockingStatus').style.fontSize = "large"
+                                            document.getElementById('sticky').style.fontSize = "large"
                                         }
                                     }
                                 }
                             }
-                            else if (playingOnCurrentDevice) {
+                            else if (playingOnCurrentDevice) { // playing on current device
                                 currentProgress = data.body.progress_ms;
 
                                 // console.log(`previous progress: ${previousProgress}`)
                                 // console.log(`current progress: ${currentProgress}`)
 
-                                // console.log(`-------------------------------------------`)
 
                                 try { //see if its a song
                                     if (data.statusCode == 204) { // check if user is not playing anything
@@ -276,10 +345,38 @@ fs.readFile('./resources/app/bin.bin', function (err, key) {
                                         document.getElementById("albumCover").src = './placeholder.jpg'
                                         document.body.style.backgroundColor = `rgb(255,255,255)`
                                         document.body.style.backgroundImage = `url('./background.jpg')`
-                                    } else {
+
+                                        document.getElementById('nowPlaying').style.fontSize = "2rem"
+                                        document.getElementById('artist').style.fontSize = "1.5rem"
+                                        document.getElementById('explicit').style.fontSize = "large"
+                                        document.getElementById('songRunTime').style.fontSize = "large"
+                                        document.getElementById('currentTime').style.fontSize = "large"
+                                        document.getElementById('blockingStatus').style.fontSize = "large"
+                                        document.getElementById('sticky').style.fontSize = "large"
+                                    } else { // playing song
 
                                         //set now playing
-                                        document.getElementById('nowPlaying').innerHTML = `${data.body.item.name}`
+                                        console.log("LEN" + data.body.item.name.length)
+                                        if (data.body.item.name.length > 45) {
+                                            document.getElementById('nowPlaying').innerHTML = `${data.body.item.name}`
+                                            document.getElementById('nowPlaying').style.fontSize = "1.5rem"
+                                            document.getElementById('artist').style.fontSize = "medium"
+                                            document.getElementById('explicit').style.fontSize = "medium"
+                                            document.getElementById('songRunTime').style.fontSize = "medium"
+                                            document.getElementById('currentTime').style.fontSize = "medium"
+                                            document.getElementById('blockingStatus').style.fontSize = "medium"
+                                            document.getElementById('sticky').style.fontSize = "medium"
+                                            console.log("Font changed")
+                                        } else {
+                                            document.getElementById('nowPlaying').innerHTML = `${data.body.item.name}`
+                                            document.getElementById('nowPlaying').style.fontSize = "2rem"
+                                            document.getElementById('artist').style.fontSize = "1.5rem"
+                                            document.getElementById('explicit').style.fontSize = "large"
+                                            document.getElementById('songRunTime').style.fontSize = "large"
+                                            document.getElementById('currentTime').style.fontSize = "large"
+                                            document.getElementById('blockingStatus').style.fontSize = "large"
+                                            document.getElementById('sticky').style.fontSize = "large"
+                                        }
                                         //set album cover
                                         document.getElementById("albumCover").src = data.body.item.album.images[1].url
                                         // remove background img
@@ -355,12 +452,12 @@ fs.readFile('./resources/app/bin.bin', function (err, key) {
                                             }
                                             // document.getElementById('blockingStatus').innerHTML = "Currently Blocking Ads: No"
                                         }
-                                        // console.log(`muted1: ${ muted } `)
                                     }
 
 
                                 } catch (err) { //its an ad
                                     document.getElementById('nowPlaying').innerHTML = `Spotify is currently playing an AD.` //ad
+                                    document.getElementById('nowPlaying').style.fontSize = "2rem"
                                     document.getElementById('artist').innerHTML = ``;
                                     document.getElementById('explicit').innerHTML = ``;
                                     document.getElementById('songRunTime').innerHTML = '';
@@ -368,6 +465,13 @@ fs.readFile('./resources/app/bin.bin', function (err, key) {
                                     document.body.style.backgroundColor = `rgb(255,255,255)`
                                     document.body.style.backgroundImage = `url('./background.jpg')`
                                     document.getElementById("albumCover").src = './adholder.png'
+
+                                    document.getElementById('artist').style.fontSize = "1.5rem"
+                                    document.getElementById('explicit').style.fontSize = "large"
+                                    document.getElementById('songRunTime').style.fontSize = "large"
+                                    document.getElementById('currentTime').style.fontSize = "large"
+                                    document.getElementById('blockingStatus').style.fontSize = "large"
+                                    document.getElementById('sticky').style.fontSize = "large"
                                     if (appConfig.blockAds === true) {
                                         if (data.body.currently_playing_type === "ad" && muted === false && (data.body.is_playing === true)) { //mute if ad starts previousProgress != currentProgress
                                             if (process.platform === "win32") {
@@ -377,6 +481,16 @@ fs.readFile('./resources/app/bin.bin', function (err, key) {
                                             } else {
                                                 robot.keyTap("audio_mute");
                                                 muted = true
+                                            }
+                                        }
+                                        if (process.platform != "win32") { // if speakers unmuted during ad - does not apply on win32
+                                            if (data.body.is_playing === true && data.body.currently_playing_type === "ad") {
+                                                loudness.getMuted().then((adMuted) => {
+                                                    if (!adMuted) {
+                                                        console.log("AD MUTE" + adMuted)
+                                                        robot.keyTap("audio_mute");
+                                                    }
+                                                })
                                             }
                                         }
                                         if (data.body.is_playing === false && muted === true) { // unmute if paused during ad previousProgress == currentProgress
@@ -400,8 +514,11 @@ fs.readFile('./resources/app/bin.bin', function (err, key) {
                                             nircmd('nircmd muteappvolume Spotify.exe 0')
                                             muted = false
                                         } else {
-                                            robot.keyTap("audio_mute")
-                                            muted = false
+                                            if (muted === true) {
+                                                robot.keyTap("audio_mute")
+                                                // DONT MUTE if blockads is false! :/
+                                                muted = false
+                                            }
                                         }
                                     }
                                 }
@@ -412,8 +529,8 @@ fs.readFile('./resources/app/bin.bin', function (err, key) {
                         });
 
                     previousProgress = currentProgress;
-                    //FIX: Access Token Refresh Loop: http://prntscr.com/o09vg6
-                    // function refreshToken() { //refresh token every 3500 seconds. Expiration time is 6000 seconds or 1 hour.
+                    //FIX: Access Token Refresh Loop: http://prntscr.com/o09vg6 - Fixed
+                    //refresh token every 3500 seconds. Expiration time is 6000 seconds or 1 hour.
                     if (new Date().getTime() - tokenExpTime > 3500000 && tokenRefTimer == 0) {
                         spotifyApi.refreshAccessToken().then(
                             function (data) {
@@ -462,6 +579,7 @@ fs.readFile('./resources/app/bin.bin', function (err, key) {
                     //         }
                     //     );
                     // }
+                    console.log(muted)
                 }
                 setInterval(getPlaying, 1 * 1000) //end of get playing
 
@@ -510,7 +628,6 @@ fs.readFile('./resources/app/bin.bin', function (err, key) {
     // console.log('Not authorized')
     //as soom as someone submits something, this triggers
 })
-
 // credentials are optional
 
 
