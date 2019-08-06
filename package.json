@@ -1,10 +1,10 @@
 {
   "name": "spotify-muter",
-  "version": "0.5.0",
+  "version": "1.0.0-beta1",
   "description": "Spotify-Muter",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node versionTest.js",
     "start": "electron .",
     "buildwin": "electron-packager . SpotiMuter --icon=\"./devAppLogo.ico\" --version-string.ProductName=\"SpotiMuter\""
   },
@@ -32,6 +32,7 @@
     "querystring": "^0.2.0",
     "request": "^2.88.0",
     "robotjs": "^0.5.1",
+    "semver": "^6.3.0",
     "spotify-web-api-node": "^4.0.0"
   },
   "bugs": {
