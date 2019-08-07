@@ -34,7 +34,6 @@ app.on('ready', () => {
             backgroundThrottling: false // prevent background sleeping
         }
     });
-
     mainWindow.setMenu(null)
     mainWindow.setAlwaysOnTop(appConfig.sticky)
     if (config.devMode === true) {

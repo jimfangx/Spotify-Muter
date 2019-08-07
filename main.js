@@ -6,11 +6,11 @@ if (config.devMode === true) {
     filePath = "bin.bin"
 }
 else if (process.platform === "win32") {
-    filePath = process.execPath.substring(0,process.execPath.indexOf("SpotiMuter.exe")) + "resources\\app\\bin.bin"
+    filePath = process.execPath.substring(0, process.execPath.indexOf("SpotiMuter.exe")) + "resources\\app\\bin.bin"
 } else if (process.platform === "darwin") {
     filePath = "./contents/resources/app/bin.bin"
 }
-console.log(filePath)
+// console.log(filePath)
 fs.readFile(filePath, function (err, key) {
     // DEV bin.bin
     // WIN ./resources/app/bin.bin ./SpotiMuter-win32-x64
@@ -32,7 +32,6 @@ fs.readFile(filePath, function (err, key) {
     const { exec } = require('child_process');
     var cmd = require('node-cmd');
     const loudness = require('mwl-loudness')
-    console.log(key)
     // var { getVolume, setVolume } = require('sysvol');  
     // var robot = require("robotjs"); https://stackoverflow.com/questions/11178372/is-it-possible-to-simulate-keyboard-mouse-event-in-nodejs
 
@@ -67,9 +66,45 @@ fs.readFile(filePath, function (err, key) {
     var numberOfTimesUpdated = 0;
     var muted = false
     var playingOnCurrentDevice = false;
+    var adholderPath = ""
+    var placeholderpath = ""
+    var backgroundPath = ""
+
+    //adholder path calculations
+    if (config.devMode === true) {
+        adholderPath = "./adholder.png"
+    }
+    else if (process.platform === "win32") {
+        adholderPath = process.execPath.substring(0, process.execPath.indexOf("SpotiMuter.exe")) + "resources\\app\\adholder.png"
+    } else if (process.platform === "darwin") {
+        adholderPath = "./contents/resources/app/adholder.png"
+    }
+
+    //placeholder path calculations
+    if (config.devMode === true) {
+        placeholderpath = "./placeholder.jpg"
+    }
+    else if (process.platform === "win32") {
+        placeholderpath = process.execPath.substring(0, process.execPath.indexOf("SpotiMuter.exe")) + "resources\\app\\placeholder.jpg"
+    } else if (process.platform === "darwin") {
+        placeholderpath = "./contents/resources/app/placeholder.jpg"
+    }
+
+    // background path calculations
+    if (config.devMode === true) {
+        backgroundPath = "./background.jpg"
+    }
+    else if (process.platform === "win32") {
+        backgroundPath = process.execPath.substring(0, process.execPath.indexOf("SpotiMuter.exe")) + "resources/app/background.jpg"
+        backgroundPath = backgroundPath.substring(2) // remove drive letter
+        backgroundPath = backgroundPath.replace(/\\/g,"/")
+    } else if (process.platform === "darwin") {
+        backgroundPath = "./contents/resources/app/background.jpg"
+    }
+
     if (process.platform == "darwin") {
         loudness.getMuted().then((adMuted) => {
-            console.log("AD MUTE START" + adMuted)
+            // console.log("AD MUTE START" + adMuted)
             muted = adMuted;
         })
     } else if (process.platform === "win32") {
@@ -210,9 +245,10 @@ fs.readFile(filePath, function (err, key) {
                                     document.getElementById('explicit').innerHTML = ``;
                                     document.getElementById('songRunTime').innerHTML = '';
                                     document.getElementById('currentTime').innerHTML = '';
-                                    document.getElementById("albumCover").src = './placeholder.jpg'
+                                    document.getElementById("albumCover").src = placeholderpath
                                     document.body.style.backgroundColor = `rgb(255,255,255)`
-                                    document.body.style.backgroundImage = `url('./background.jpg')`
+                                    document.body.style.backgroundImage = 'url(' + backgroundPath + ')'
+                                    //`url('./background.jpg')`
 
                                     document.getElementById('nowPlaying').style.fontSize = "2rem"
                                     document.getElementById('artist').style.fontSize = "1.5rem"
@@ -223,7 +259,7 @@ fs.readFile(filePath, function (err, key) {
                                     document.getElementById('sticky').style.fontSize = "large"
                                 } else {
                                     try { //see if its a song
-                                        console.log('LEN' + data.body.item.name.length)
+                                        // console.log('LEN' + data.body.item.name.length)
                                         if (data.body.item.name.length > 31) {
                                             document.getElementById('nowPlaying').innerHTML = `${data.body.item.name} [NOT ON CURRENT DEVICE]`
                                             document.getElementById('nowPlaying').style.fontSize = "1.3rem"
@@ -233,7 +269,7 @@ fs.readFile(filePath, function (err, key) {
                                             document.getElementById('currentTime').style.fontSize = "medium"
                                             document.getElementById('blockingStatus').style.fontSize = "medium"
                                             document.getElementById('sticky').style.fontSize = "medium"
-                                            console.log("Font changed")
+                                            // console.log("Font changed")
                                         } else {
                                             document.getElementById('nowPlaying').innerHTML = `${data.body.item.name} [NOT ON CURRENT DEVICE]`
                                             document.getElementById('nowPlaying').style.fontSize = "2rem"
@@ -249,7 +285,7 @@ fs.readFile(filePath, function (err, key) {
                                         document.body.style.backgroundImage = ``
                                         //set background using k-means clustering
                                         Vibrant.from(data.body.item.album.images[1].url).getPalette((err, palette) => {
-                                            console.log(palette);
+                                            // console.log(palette);
                                             colorSwatch[0] = parseInt(palette.DarkMuted.population)
                                             colorSwatch[1] = parseInt(palette.DarkVibrant.population)
                                             colorSwatch[2] = parseInt(palette.LightMuted.population)
@@ -260,7 +296,7 @@ fs.readFile(filePath, function (err, key) {
                                             paletteCopy = palette;
                                         })
                                         let chosen = 0
-                                        console.log(Math.max.apply(Math, colorSwatch))
+                                        // console.log(Math.max.apply(Math, colorSwatch))
                                         for (var j = 0; j < colorSwatch.length; j++) {
                                             if (colorSwatch[j] === Math.max.apply(Math, colorSwatch)) {
                                                 chosen = j;
@@ -316,8 +352,9 @@ fs.readFile(filePath, function (err, key) {
                                             document.getElementById('songRunTime').innerHTML = '';
                                             document.getElementById('currentTime').innerHTML = '';
                                             document.body.style.backgroundColor = `rgb(255,255,255)`
-                                            document.body.style.backgroundImage = `url('./background.jpg')`
-                                            document.getElementById("albumCover").src = './adholder.png'
+                                            document.body.style.backgroundImage = 'url(' + backgroundPath + ')'
+                                            //  `url('./background.jpg')`
+                                            document.getElementById("albumCover").src = adholderPath
                                             document.getElementById('artist').style.fontSize = "1.5rem"
                                             document.getElementById('explicit').style.fontSize = "large"
                                             document.getElementById('songRunTime').style.fontSize = "large"
@@ -342,9 +379,10 @@ fs.readFile(filePath, function (err, key) {
                                         document.getElementById('explicit').innerHTML = ``;
                                         document.getElementById('songRunTime').innerHTML = '';
                                         document.getElementById('currentTime').innerHTML = '';
-                                        document.getElementById("albumCover").src = './placeholder.jpg'
+                                        document.getElementById("albumCover").src = placeholderpath
                                         document.body.style.backgroundColor = `rgb(255,255,255)`
-                                        document.body.style.backgroundImage = `url('./background.jpg')`
+                                        document.body.style.backgroundImage = 'url(' + backgroundPath + ')'
+                                        // `url('./background.jpg')`
 
                                         document.getElementById('nowPlaying').style.fontSize = "2rem"
                                         document.getElementById('artist').style.fontSize = "1.5rem"
@@ -356,7 +394,7 @@ fs.readFile(filePath, function (err, key) {
                                     } else { // playing song
 
                                         //set now playing
-                                        console.log("LEN" + data.body.item.name.length)
+                                        // console.log("LEN" + data.body.item.name.length)
                                         if (data.body.item.name.length > 45) {
                                             document.getElementById('nowPlaying').innerHTML = `${data.body.item.name}`
                                             document.getElementById('nowPlaying').style.fontSize = "1.5rem"
@@ -366,7 +404,7 @@ fs.readFile(filePath, function (err, key) {
                                             document.getElementById('currentTime').style.fontSize = "medium"
                                             document.getElementById('blockingStatus').style.fontSize = "medium"
                                             document.getElementById('sticky').style.fontSize = "medium"
-                                            console.log("Font changed")
+                                            // console.log("Font changed")
                                         } else {
                                             document.getElementById('nowPlaying').innerHTML = `${data.body.item.name}`
                                             document.getElementById('nowPlaying').style.fontSize = "2rem"
@@ -383,7 +421,7 @@ fs.readFile(filePath, function (err, key) {
                                         document.body.style.backgroundImage = ``
                                         //set background using k-means clustering
                                         Vibrant.from(data.body.item.album.images[1].url).getPalette((err, palette) => {
-                                            console.log(palette);
+                                            // console.log(palette);
                                             colorSwatch[0] = parseInt(palette.DarkMuted.population)
                                             colorSwatch[1] = parseInt(palette.DarkVibrant.population)
                                             colorSwatch[2] = parseInt(palette.LightMuted.population)
@@ -394,7 +432,7 @@ fs.readFile(filePath, function (err, key) {
                                             paletteCopy = palette;
                                         })
                                         let chosen = 0
-                                        console.log(Math.max.apply(Math, colorSwatch))
+                                        // console.log(Math.max.apply(Math, colorSwatch))
                                         for (var j = 0; j < colorSwatch.length; j++) {
                                             if (colorSwatch[j] === Math.max.apply(Math, colorSwatch)) {
                                                 chosen = j;
@@ -463,8 +501,9 @@ fs.readFile(filePath, function (err, key) {
                                     document.getElementById('songRunTime').innerHTML = '';
                                     document.getElementById('currentTime').innerHTML = '';
                                     document.body.style.backgroundColor = `rgb(255,255,255)`
-                                    document.body.style.backgroundImage = `url('./background.jpg')`
-                                    document.getElementById("albumCover").src = './adholder.png'
+                                    document.body.style.backgroundImage = 'url(' + backgroundPath + ')'
+                                    // `url('./background.jpg')`
+                                    document.getElementById("albumCover").src = adholderPath
 
                                     document.getElementById('artist').style.fontSize = "1.5rem"
                                     document.getElementById('explicit').style.fontSize = "large"
@@ -487,7 +526,7 @@ fs.readFile(filePath, function (err, key) {
                                             if (data.body.is_playing === true && data.body.currently_playing_type === "ad") {
                                                 loudness.getMuted().then((adMuted) => {
                                                     if (!adMuted) {
-                                                        console.log("AD MUTE" + adMuted)
+                                                        // console.log("AD MUTE" + adMuted)
                                                         robot.keyTap("audio_mute");
                                                     }
                                                 })
@@ -579,7 +618,7 @@ fs.readFile(filePath, function (err, key) {
                     //         }
                     //     );
                     // }
-                    console.log(muted)
+                    // console.log(muted)
                 }
                 setInterval(getPlaying, 1 * 1000) //end of get playing
 

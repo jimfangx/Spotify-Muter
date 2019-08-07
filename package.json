@@ -1,12 +1,13 @@
 {
   "name": "spotify-muter",
-  "version": "1.0.0-beta1",
+  "version": "1.0.0-alpha1",
   "description": "Spotify-Muter",
   "main": "index.js",
   "scripts": {
     "test": "node versionTest.js",
     "start": "electron .",
-    "buildwin": "electron-packager . SpotiMuter --icon=\"./devAppLogo.ico\" --version-string.ProductName=\"SpotiMuter\""
+    "buildwin": "electron-packager . SpotiMuter --icon=\"./devAppLogo.ico\" --version-string.ProductName=\"SpotiMuter\"",
+    "buildmac": "electron-packager . SpotiMuter --icon=\"./devAppLogo.icns\" --version-string.ProductName=\"SpotiMuter\""
   },
   "repository": {
     "type": "git",
