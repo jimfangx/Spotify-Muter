@@ -29,3 +29,5 @@ build/Release
 node_modules
 
 SpotiMuter-win32-x64/
+
+SpotiMuter-win32-x64\.zip

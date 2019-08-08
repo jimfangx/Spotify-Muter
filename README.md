@@ -14,7 +14,7 @@ Instructions on how to build SpotiMuter from source.
     * Install all required dependencies using `npm install`
     * Start app using `npm start || electron .`
     
-# Build from source: Not using Git:
+# Build from source - Not using Git:
   * __**Prerequisites:**__
     * A computer that has a command line
     * A computer that has nodeJS installed on it, and the ability to install npm modules.
@@ -66,7 +66,7 @@ Here are credits for all the code I used that was from other repositories.
   * Implimentation of k-means clustering is from akfish's node-vibrant [here](https://github.com/akfish/node-vibrant/)
 
 # Contact Me
-Feel free to contact me if you find bugs, license issues, missing credits, etc. I am currently only giving out my Discord contact information, but feel free to contact me via Discord and my email.
+Feel free to contact me if you find bugs, license issues, missing credits, etc. Feel free to contact me by email or Discord!
 
   * Please contact me here:
     * Email: jfang.cv.ca.us@gmail.com OR jim@jimfang.me
