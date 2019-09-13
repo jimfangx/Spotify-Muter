@@ -3,6 +3,8 @@ var request = require('request')
 const { app, BrowserWindow, ipcMain, Menu, ClientRequest, session } = electron;
 var config = require('./config.json')
 var querystring = require('querystring');
+const Sentry = require('@sentry/electron')
+Sentry.init({dsn: 'https://baa4d45f52ac4c14a41c981b7bae0fa8@sentry.io/1726927'});
 /* Load the HTTP library */
 var http = require("http");
 var appConfig = require('./appConfig.json')

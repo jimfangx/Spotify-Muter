@@ -1,6 +1,8 @@
 var fs = require('fs');
 var config = require('./config.json')
 var filePath = ""
+const Sentry = require('@sentry/electron')
+Sentry.init({dsn: 'https://baa4d45f52ac4c14a41c981b7bae0fa8@sentry.io/1726927'});
 
 if (config.devMode === true) {
     filePath = "bin.bin"
@@ -8,7 +10,7 @@ if (config.devMode === true) {
 else if (process.platform === "win32") {
     filePath = process.execPath.substring(0, process.execPath.indexOf("SpotiMuter.exe")) + "resources\\app\\bin.bin"
 } else if (process.platform === "darwin") {
-    filePath = "./contents/resources/app/bin.bin"
+    filePath = process.execPath.substring(0, process.execPath.indexOf("SpotiMuter.app")) + "SpotiMuter.app/contents/resources/app/bin.bin"
 }
 // console.log(filePath)
 fs.readFile(filePath, function (err, key) {
