@@ -23,16 +23,19 @@
     <!-- <script type="text/javascript" src="js/materialize.min.js"></script> -->
     <div class="topnav">
         <!-- avatar -->
-        <div id="avatarImg">
-            <img src="" alt="Avatar" id="avatar" class="avatar">
-        </div>
+        <!-- <div id="rightBar"> -->
+            <div id="avatarImg">
+                <img src="" alt="Avatar" id="avatar" class="avatar">
+            </div>
 
-        <div id="usersName">
-            <h3 id="usersNameText"></h3>
-        </div>
+            <div id="usersName">
+                <h3 id="usersNameText" onclick="logout()"></h3>
+            </div>
+        <!-- </div> -->
         <div id="programName">
             <h2 id="programNameText">SpotiMuter</h2>
         </div>
+        <script src="./configManager.js"></script>
     </div>
 
     <div id="bottomSection">

@@ -20,9 +20,41 @@ html, body {
     margin-top: 20px;
     margin-bottom: 20px
 }
+#usersName{
+    /* // padding-left: 90%; // */
+    /* position: relative; */
+    /* left: 74%; */
+    /* top: -68px; */
+    overflow: hidden;
+    right: 0px;
+    left: 0px;
+    top: 0px;
+    bottom: 0px;
+    position: absolute;
+    text-align: right;
+ } 
+#usersNameText {
+    color: white;
+    /* // padding-left: 80px;
+    padding-top: -15px; // */
+    /* text-align: left; */
+    /* overflow: hidden; */
+    font-size: 1.5rem;
+    /* height: auto; */
+    line-height: normal;
+    /* position: absolute; */
+    text-align: right;
+    right: 0px;
+    left: 0px;
+    top: 0px;
+    float: right;
+} 
 #avatarImg{
     padding-top: 12px;
-    padding-left: 65%; 
+    /* padding-left: 0;  */
+    /* left: 600px; */
+    position: relative;
+    /* left: 65%; */
 }
 #avatar {
     vertical-align: middle;
@@ -30,24 +62,10 @@ html, body {
     height: 50px;
     border-radius: 50%;
     background-position: right 100px top;
+    position: relative;
 }
-#usersName{
-   /* padding-left: 90%; */
-   position: relative;
-   left: 74%;
-   top: -68px;
-   overflow: hidden;
-}
-#usersNameText{
-    color: white;
-    /* padding-left: 80px;
-    padding-top: -15px; */
-    text-align: left;
-    overflow: hidden;
-    font-size: 1.5rem;
-    height: auto;
-    line-height: normal;
-}
+
+
 #albumCover{
     padding-left: 15%;
     overflow: hidden;
@@ -105,15 +123,25 @@ html, body {
 }
 #programName{
     position: relative;
-    top: -151px;
-    width: 200px;
-    overflow: hidden;
+    /* top: -151px; */
+    /* width: 200px; */
+    /* overflow: hidden; */
+    bottom: 60px;
+    text-align: left;
+   
 }
 #programNameText{
     color: white;
-    text-align: center;
-    overflow: hidden;
+    /* text-align: center; */
+    /* overflow: hidden; */
     font-size: 30px;
+
+    margin-bottom: 0px;
+    margin-top: 0px;
+    top: 17px;
+    left: 30px;
+    position: relative;
+    width: fit-content;
 }
 #buttonControls {
     text-align: center;

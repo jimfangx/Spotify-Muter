@@ -1,6 +1,8 @@
 var fs = require('fs');
 var appConfigPath = ""
 var config = require('./config.json')
+const electron = require('electron')
+const { ipcRenderer } = electron;
 
 if (config.devMode === true) {
     appConfigPath = "./appConfig.json"
@@ -62,4 +64,8 @@ function stickyToggle() {
             document.getElementById('sticky').innerHTML = `Is app sticky: No`
         }
     }
+}
+
+function logout() {
+    ipcRenderer.send('logoutReq')
 }

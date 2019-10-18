@@ -2,7 +2,7 @@ var fs = require('fs');
 var config = require('./config.json')
 var filePath = ""
 const Sentry = require('@sentry/electron')
-Sentry.init({dsn: 'https://baa4d45f52ac4c14a41c981b7bae0fa8@sentry.io/1726927'});
+Sentry.init({ dsn: 'https://baa4d45f52ac4c14a41c981b7bae0fa8@sentry.io/1726927' });
 
 if (config.devMode === true) {
     filePath = "bin.bin"
@@ -82,7 +82,7 @@ fs.readFile(filePath, function (err, key) {
         adholderPath = "./contents/resources/app/adholder.png"
     }
 
-    //placeholder path calculations
+    //placeholder img path calculations
     if (config.devMode === true) {
         placeholderpath = "./placeholder.jpg"
     }
@@ -99,7 +99,7 @@ fs.readFile(filePath, function (err, key) {
     else if (process.platform === "win32") {
         backgroundPath = process.execPath.substring(0, process.execPath.indexOf("SpotiMuter.exe")) + "resources/app/background.jpg"
         backgroundPath = backgroundPath.substring(2) // remove drive letter
-        backgroundPath = backgroundPath.replace(/\\/g,"/")
+        backgroundPath = backgroundPath.replace(/\\/g, "/")
     } else if (process.platform === "darwin") {
         backgroundPath = "./contents/resources/app/background.jpg"
     }
@@ -191,7 +191,15 @@ fs.readFile(filePath, function (err, key) {
                         authUserName = data.body.display_name;
                         pictureURL = data.body.images[0].url;
                         document.getElementById("avatar").src = pictureURL;
-                        document.getElementById("usersNameText").innerHTML = `Welcome, ${authUserName}`;
+                        document.getElementById("usersNameText").innerHTML = `Welcome, ${authUserName} (Logout)`;
+                        console.log(document.getElementById("usersNameText").innerHTML)
+                        var usersNameTextWidth = document.getElementById("usersNameText").clientWidth;
+                        console.log(usersNameTextWidth)
+                        var viewPortWidth = document.documentElement.clientWidth;
+                        console.log(viewPortWidth)
+                        var avatarPos = parseInt((viewPortWidth-usersNameTextWidth)-60)
+                        console.log(`avatarPOS: ${avatarPos}`)
+                        document.getElementById("avatarImg").style.left = `${avatarPos}px`;
                     }, function (err) {
                         console.log('Something went wrong!', err);
                     });
@@ -213,7 +221,7 @@ fs.readFile(filePath, function (err, key) {
                 let colorSwatch = []
                 let paletteCopy;
 
-                function getPlaying() { // get current playing every 3 seconds, and updates HTML.
+                function getPlaying() { // get current playing every 3 (now think its 1 sec) seconds, and updates HTML.
                     spotifyApi.getMyDevices()
                         .then(function (data1) {
                             for (var i = 0; i < data1.body.devices.length; i++) {
@@ -235,7 +243,7 @@ fs.readFile(filePath, function (err, key) {
                     })
                         .then(function (data) { // need to be able to detect an ad playing and show it -- done
                             // Output items
-
+                            console.log(`DATA CODE: ${data.statusCode}`)
                             // console.log("Now Playing: ", data);
                             tokenRefTimer = 0;
                             // console.log(`Token REF TIMER RESET: ${tokenRefTimer}`)
@@ -259,8 +267,24 @@ fs.readFile(filePath, function (err, key) {
                                     document.getElementById('currentTime').style.fontSize = "large"
                                     document.getElementById('blockingStatus').style.fontSize = "large"
                                     document.getElementById('sticky').style.fontSize = "large"
-                                } else {
-                                    try { //see if its a song
+                                } else if (data.statusCode === 401) { //401
+                                    // reauth
+                                    console.log("reauthorizing")
+                                    spotifyApi.refreshAccessToken().then(
+                                        function (data) {
+                                            // Save the access token so that it's used in future calls
+                                            spotifyApi.setAccessToken(data.body['access_token']);
+                                            tokenExpTime = new Date().getTime();
+                                            console.log(`The access token has been refreshed! EXP in ${tokenExpTime} `);
+                                            tokenRefTimer++;
+                                        },
+                                        function (err) {
+                                            console.log('Could not refresh access token', err);
+                                        }
+                                    );
+                                }
+                                else {
+                                    try { //see if its a song on another device
                                         // console.log('LEN' + data.body.item.name.length)
                                         if (data.body.item.name.length > 31) {
                                             document.getElementById('nowPlaying').innerHTML = `${data.body.item.name} [NOT ON CURRENT DEVICE]`
@@ -369,7 +393,7 @@ fs.readFile(filePath, function (err, key) {
                             }
                             else if (playingOnCurrentDevice) { // playing on current device
                                 currentProgress = data.body.progress_ms;
-
+                                // console.log(`DATA CODE: ${data.statusCode}`)
                                 // console.log(`previous progress: ${previousProgress}`)
                                 // console.log(`current progress: ${currentProgress}`)
 
@@ -393,7 +417,23 @@ fs.readFile(filePath, function (err, key) {
                                         document.getElementById('currentTime').style.fontSize = "large"
                                         document.getElementById('blockingStatus').style.fontSize = "large"
                                         document.getElementById('sticky').style.fontSize = "large"
-                                    } else { // playing song
+                                    } else if (data.statusCode === 401) { //401
+                                        // reauth
+                                        console.log("reauthorizing")
+                                        spotifyApi.refreshAccessToken().then(
+                                            function (data) {
+                                                // Save the access token so that it's used in future calls
+                                                spotifyApi.setAccessToken(data.body['access_token']);
+                                                tokenExpTime = new Date().getTime();
+                                                console.log(`The access token has been refreshed! EXP in ${tokenExpTime} `);
+                                                tokenRefTimer++;
+                                            },
+                                            function (err) {
+                                                console.log('Could not refresh access token', err);
+                                            }
+                                        );
+                                    }
+                                    else { // playing song
 
                                         //set now playing
                                         // console.log("LEN" + data.body.item.name.length)

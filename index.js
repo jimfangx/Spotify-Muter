@@ -1,6 +1,6 @@
 const electron = require('electron');
 var request = require('request')
-const { app, BrowserWindow, ipcMain, Menu, ClientRequest, session } = electron;
+const { app, BrowserWindow, ipcMain, Menu, ClientRequest, session, powerSaveBlocker } = electron;
 var config = require('./config.json')
 var querystring = require('querystring');
 const Sentry = require('@sentry/electron')
@@ -27,6 +27,8 @@ var authServer = http.createServer(function (request, response) {
 
 //prevent app throttling / sleeping in background
 app.commandLine.appendSwitch('disable-renderer-backgrounding')
+const id = powerSaveBlocker.start('prevent-app-suspension');
+console.log(id)
 
 app.on('ready', () => {
     console.log(`I am ready @ ${Date()}`)
@@ -39,7 +41,7 @@ app.on('ready', () => {
     mainWindow.setMenu(null)
     mainWindow.setAlwaysOnTop(appConfig.sticky)
     if (config.devMode === true) {
-        mainWindow.webContents.openDevTools()
+        // mainWindow.webContents.openDevTools()
         mainWindow.setResizable(true)
     } else if (config.devMode === false) {
         mainWindow.setResizable(false)
@@ -125,6 +127,21 @@ app.on('ready', () => {
             authWindow.close()
             mainWindow.webContents.send('authWindowCloseComplete')
             authServer.close();
+        })
+    })
+
+    ipcMain.on("logoutReq", (event) => {
+        var logoutWindow = new BrowserWindow({ width: 800, height: 600, show: false, 'node-integration': false });
+        logoutWindow.loadURL('https://www.spotify.com/logout/');
+        logoutWindow.show();
+        session.defaultSession.webRequest.onCompleted((details) => { //check if a page has finished loading
+            // get the cookie after redirect from the page
+            // console.log(details.webContentsId)
+            // console.log(details)
+            console.log(details.url)
+            if (details.url.length>23 && details.url.length<27 && details.url.length.indexOf("https://www.spotify.com")>=1) { // check if auth redirect site is loaded is complete
+                logoutWindow.close()
+            }
         })
     })
 
