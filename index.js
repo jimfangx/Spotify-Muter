@@ -1,10 +1,10 @@
 const electron = require('electron');
 var request = require('request')
-const { app, BrowserWindow, ipcMain, Menu, ClientRequest, session, powerSaveBlocker } = electron;
+const { app, BrowserWindow, ipcMain, Menu, ClientRequest, session, powerSaveBlocker, globalShortcut } = electron;
 var config = require('./config.json')
 var querystring = require('querystring');
 const Sentry = require('@sentry/electron')
-Sentry.init({dsn: 'https://baa4d45f52ac4c14a41c981b7bae0fa8@sentry.io/1726927'});
+Sentry.init({ dsn: 'https://baa4d45f52ac4c14a41c981b7bae0fa8@sentry.io/1726927' });
 /* Load the HTTP library */
 var http = require("http");
 var appConfig = require('./appConfig.json')
@@ -16,6 +16,17 @@ let mainWindow;
 var spotiMuterAutoLauncher = new AutoLaunch({
     name: 'SpotiMuter'
 });
+
+// var shouldQuit = app.requestSingleInstanceLock(function (commandLine, workingDirectory) {
+//     if (mainWindow) {
+//         mainWindow.show();
+//     }
+// });
+
+// if (shouldQuit) {
+//     app.quit();
+//     return;
+// }
 
 /* Create an HTTP server to handle responses */
 
@@ -41,7 +52,7 @@ app.on('ready', () => {
     mainWindow.setMenu(null)
     mainWindow.setAlwaysOnTop(appConfig.sticky)
     if (config.devMode === true) {
-        // mainWindow.webContents.openDevTools()
+        mainWindow.webContents.openDevTools()
         mainWindow.setResizable(true)
     } else if (config.devMode === false) {
         mainWindow.setResizable(false)
@@ -139,8 +150,15 @@ app.on('ready', () => {
             // console.log(details.webContentsId)
             // console.log(details)
             console.log(details.url)
-            if (details.url.length>23 && details.url.length<27 && details.url.length.indexOf("https://www.spotify.com")>=1) { // check if auth redirect site is loaded is complete
-                logoutWindow.close()
+            console.log(details.url.length > 23)
+            console.log(details.url.length < 33)
+            console.log(details.url.length.indexOf("https://www.spotify.com") >= 1)
+            if (details.url.indexOf("https://www.spotify.com/us/") >= 1) {
+            //     console.log("I AM INSIDE!!!")
+                if (details.url.length > 23 && details.url.length < 33) { // check if auth redirect site is loaded is complete
+                    logoutWindow.close();
+                    app.quit();
+                }
             }
         })
     })
@@ -152,6 +170,22 @@ app.on('ready', () => {
     //     console.log('body:', body); // Print the HTML for the Google homepage.
     // })
     // console.log(authUrl)
+
+    mainWindow.on('window-all-closed', () => {
+        // added this line because on exiting, the shortcut could still be called and returning error
+        // globalShortcut.unregisterAll();
+        if (process.platform !== 'darwin') {
+            app.quit()
+        }
+    });
+
+    app.on('window-all-closed', () => {
+        if (process.platform !== "darwin") {
+            console.log("quitting!")
+            app.quit();
+        }
+    });
+
 
 })
 
