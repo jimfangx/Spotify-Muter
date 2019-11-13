@@ -71,6 +71,8 @@ fs.readFile(filePath, function (err, key) {
     var adholderPath = ""
     var placeholderpath = ""
     var backgroundPath = ""
+    var apiRequestTime = 1 * 1000;
+    // console.log("I am out of main")
 
     //adholder path calculations
     if (config.devMode === true) {
@@ -185,7 +187,7 @@ fs.readFile(filePath, function (err, key) {
                 //add wait for a few second to 1 min then changve status to "monitoring & blocking"
                 let authUserName = ""
                 let pictureURL = ""
-                spotifyApi.getMe()
+                spotifyApi.getMe() // get user details
                     .then(function (data) {
                         console.log('Some information about the authenticated user', data.body);
                         authUserName = data.body.display_name;
@@ -197,7 +199,7 @@ fs.readFile(filePath, function (err, key) {
                         console.log(usersNameTextWidth)
                         var viewPortWidth = document.documentElement.clientWidth;
                         console.log(viewPortWidth)
-                        var avatarPos = parseInt((viewPortWidth-usersNameTextWidth)-60)
+                        var avatarPos = parseInt((viewPortWidth - usersNameTextWidth) - 60)
                         console.log(`avatarPOS: ${avatarPos}`)
                         document.getElementById("avatarImg").style.left = `${avatarPos}px`;
                     }, function (err) {
@@ -221,7 +223,9 @@ fs.readFile(filePath, function (err, key) {
                 let colorSwatch = []
                 let paletteCopy;
 
-                function getPlaying() { // get current playing every 3 (now think its 1 sec) seconds, and updates HTML.
+                setInterval(getDevices, 1 * 1000) // getDevices every 1 sec
+
+                function getDevices() {
                     spotifyApi.getMyDevices()
                         .then(function (data1) {
                             for (var i = 0; i < data1.body.devices.length; i++) {
@@ -236,9 +240,17 @@ fs.readFile(filePath, function (err, key) {
                         }, function (err) {
                             console.error(err);
                         });
-                    //     console.log(`Device Data: ${data1.body}`)
+                }
+                //     console.log(`Device Data: ${data1.body}`)
+                // var getPlayingTime = setInterval(getPlaying, apiRequestTime) //end of get playing //REPEATED REQUESTS NEED TO DEBUG
+                // var getPlayingTime = setTimeout(getPlaying(), 1*1000)
 
+                var getPlayingTime = setInterval(getPlaying, apiRequestTime)
 
+                // setTimeout(getPlaying, apiRequestTime);
+                // getPlaying();
+
+                function getPlaying() { // get current playing every 3 (now think its 1 sec) seconds, and updates HTML.
                     spotifyApi.getMyCurrentPlayingTrack({
                     })
                         .then(function (data) { // need to be able to detect an ad playing and show it -- done
@@ -267,6 +279,12 @@ fs.readFile(filePath, function (err, key) {
                                     document.getElementById('currentTime').style.fontSize = "large"
                                     document.getElementById('blockingStatus').style.fontSize = "large"
                                     document.getElementById('sticky').style.fontSize = "large"
+
+                                    clearInterval(getPlayingTime)
+                                    apiRequestTime = 10000;
+                                    getPlayingTime = setInterval(getPlaying, apiRequestTime)
+                                    // getPlayingTime = setInterval(getPlaying(), apiRequestTime)
+                                    console.log("204 NO PLAYING SEGMENT")
                                 } else if (data.statusCode === 401) { //401
                                     // reauth
                                     console.log("reauthorizing")
@@ -367,6 +385,44 @@ fs.readFile(filePath, function (err, key) {
                                         }
                                         //run time
                                         document.getElementById('songRunTime').innerHTML = `Duration: ${millisToMinutesAndSeconds(data.body.item.duration_ms)}`
+                                        // debugger;
+
+                                        if ((data.body.item.duration_ms - data.body.progress_ms) > 30000) { // if song is ending
+                                            clearInterval(getPlayingTime) // use setTimeout
+                                            // apiRequestTime = 1000;
+                                            apiRequestTime = 5000;
+                                            getPlayingTime = setInterval(getPlaying, apiRequestTime);
+                                            console.log("SONG NOT ENDING SEGMENT")
+                                        } else if (data.statusCode == 204) { // if no song is playing
+                                            // clearInterval(getPlayingTime)
+                                            // clearTimeout(getPlayingTime)
+                                            // clearInterval(getPlayingTime);
+                                            // apiRequestTime = 1000;
+                                            clearInterval(getPlayingTime)
+                                            apiRequestTime = 10000;
+                                            getPlayingTime = setInterval(getPlaying, apiRequestTime)
+                                            // getPlayingTime = setInterval(getPlaying(), apiRequestTime)
+                                            console.log("204 NO PLAYING SEGMENT")
+                                        }
+                                        else if (data.body.currently_playing_type === 'ad') { // playing ad
+                                            // clearInterval(getPlayingTime)
+                                            clearInterval(getPlayingTime)
+                                            apiRequestTime = 5000;
+                                            getPlayingTime = setInterval(getPlaying, apiRequestTime)
+                                            console.log("AD PLAYING INTERVAL")
+                                        }
+                                        else {
+                                            clearInterval(getPlayingTime)
+                                            apiRequestTime = 1000;
+                                            getPlayingTime = setTimeout(getPlaying, apiRequestTime)
+                                        }
+
+                                        console.log(`${apiRequestTime} + 1`)
+                                        console.log("DURATION: " + data.body.item.duration_ms)
+                                        console.log("PROGRESS: " + data.body.progress_ms)
+                                        // console.log(getPlayingTime)
+                                        console.log("----------------------")
+
                                         //current time
                                         document.getElementById('currentTime').innerHTML = `Current Progress: ${millisToMinutesAndSeconds(data.body.progress_ms)}`
                                     } catch (err) { //its an ad... on another device
@@ -417,6 +473,11 @@ fs.readFile(filePath, function (err, key) {
                                         document.getElementById('currentTime').style.fontSize = "large"
                                         document.getElementById('blockingStatus').style.fontSize = "large"
                                         document.getElementById('sticky').style.fontSize = "large"
+                                        clearInterval(getPlayingTime)
+                                        apiRequestTime = 10000;
+                                        getPlayingTime = setInterval(getPlaying, apiRequestTime)
+                                        // getPlayingTime = setInterval(getPlaying(), apiRequestTime)
+                                        console.log("204 NO PLAYING SEGMENT")
                                     } else if (data.statusCode === 401) { //401
                                         // reauth
                                         console.log("reauthorizing")
@@ -519,7 +580,53 @@ fs.readFile(filePath, function (err, key) {
                                         }
                                         //run time
                                         document.getElementById('songRunTime').innerHTML = `Duration: ${millisToMinutesAndSeconds(data.body.item.duration_ms)} `
+                                        // if (data.body.item.duration_ms - data.body.progress_ms<10000){ // if song is ending
+                                        //     apiRequestTime = 1;
+                                        //     clearInterval(getPlayingTime);
+                                        // } 
+                                        // else {
+                                        //     apiRequestTime = parseInt((data.body.item.duration_ms)-10000);
+                                        //     clearInterval(getPlayingTime);
+                                        // }
+                                        // console.log(`${apiRequestTime}+2`)
                                         // current progress
+
+                                        if ((data.body.item.duration_ms - data.body.progress_ms) > 30000) { // if song is ending
+                                            clearInterval(getPlayingTime) // use setTimeout
+                                            // apiRequestTime = 1000;
+                                            apiRequestTime = 5000;
+                                            getPlayingTime = setInterval(getPlaying, apiRequestTime);
+                                            console.log("SONG NOT ENDING SEGMENT")
+                                        } else if (data.statusCode == 204) { // if no song is playing
+                                            // clearInterval(getPlayingTime)
+                                            // clearTimeout(getPlayingTime)
+                                            // clearInterval(getPlayingTime);
+                                            // apiRequestTime = 1000;
+                                            clearInterval(getPlayingTime)
+                                            apiRequestTime = 10000;
+                                            getPlayingTime = setInterval(getPlaying, apiRequestTime)
+                                            // getPlayingTime = setInterval(getPlaying(), apiRequestTime)
+                                            console.log("204 NO PLAYING SEGMENT")
+                                        }
+                                        else if (data.body.currently_playing_type === 'ad') { // playing ad
+                                            // clearInterval(getPlayingTime)
+                                            clearInterval(getPlayingTime)
+                                            apiRequestTime = 5000;
+                                            getPlayingTime = setInterval(getPlaying, apiRequestTime)
+                                            console.log("AD PLAYING INTERVAL")
+                                        }
+                                        else {
+                                            clearInterval(getPlayingTime)
+                                            apiRequestTime = 1000;
+                                            getPlayingTime = setTimeout(getPlaying, apiRequestTime)
+                                        }
+
+                                        console.log(`${apiRequestTime} + 1`)
+                                        console.log("DURATION: " + data.body.item.duration_ms)
+                                        console.log("PROGRESS: " + data.body.progress_ms)
+                                        // console.log(getPlayingTime)
+                                        console.log("----------------------")
+
                                         document.getElementById('currentTime').innerHTML = `Current Progress: ${millisToMinutesAndSeconds(data.body.progress_ms)} `
                                         // robot.keyTap("audio_mute");
                                         if (data.body.item.name != "ad" && muted === true) { //unmute if ad stops playing
@@ -661,8 +768,10 @@ fs.readFile(filePath, function (err, key) {
                     //     );
                     // }
                     // console.log(muted)
+
                 }
-                setInterval(getPlaying, 1 * 1000) //end of get playing
+                //     setInterval(getDevices, 1 * 1000) // getDevices every 1 sec
+                //   var getPlayingTime = setInterval(getPlaying, 1 * 1000) //end of get playing //REPEATED REQUESTS NEED TO DEBUG
 
                 // console.log(`jsaslfjaslfjlasjfl OuT OF TIMED FUNCTION`)
             },
