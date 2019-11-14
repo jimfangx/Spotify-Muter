@@ -150,14 +150,17 @@ app.on('ready', () => {
             // console.log(details.webContentsId)
             // console.log(details)
             console.log(details.url)
-            console.log(details.url.length > 23)
-            console.log(details.url.length < 33)
-            console.log(details.url.length.indexOf("https://www.spotify.com") >= 1)
-            if (details.url.indexOf("https://www.spotify.com/us/") >= 1) {
-            //     console.log("I AM INSIDE!!!")
-                if (details.url.length > 23 && details.url.length < 33) { // check if auth redirect site is loaded is complete
+            // console.log(details.url.length > 23)
+            // console.log(details.url.length < 33)
+            // console.log(details.url.length.indexOf("https://www.spotify.com") >= 1)
+            // logoutWindow.close();
+            // app.quit();
+            if (details.url.length < 33) {
+                // console.log("I AM INSIDE!!!")
+                if (details.url.length > 23) { // check if auth redirect site is loaded is complete
                     logoutWindow.close();
                     app.quit();
+                    // console.log("CLOSE CLOSE CLOSE")
                 }
             }
         })

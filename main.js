@@ -302,6 +302,10 @@ fs.readFile(filePath, function (err, key) {
                                     );
                                 }
                                 else {
+                                    clearInterval(getPlayingTime) // reset (for beginning so it can update gui elements); before getting changed to 5000ms again
+                                    // apiRequestTime = 1000;
+                                    apiRequestTime = 1000;
+                                    getPlayingTime = setInterval(getPlaying, apiRequestTime);
                                     try { //see if its a song on another device
                                         // console.log('LEN' + data.body.item.name.length)
                                         if (data.body.item.name.length > 31) {
@@ -495,7 +499,10 @@ fs.readFile(filePath, function (err, key) {
                                         );
                                     }
                                     else { // playing song
-
+                                        clearInterval(getPlayingTime) // reset (for beginning so it can update gui elements); before getting changed to 5000ms again
+                                        // apiRequestTime = 1000;
+                                        apiRequestTime = 1000;
+                                        getPlayingTime = setInterval(getPlaying, apiRequestTime);
                                         //set now playing
                                         // console.log("LEN" + data.body.item.name.length)
                                         if (data.body.item.name.length > 45) {
