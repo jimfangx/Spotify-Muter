@@ -19,6 +19,11 @@ fs.readFile(filePath, function (err, key) {
     // MAC ./contents/resources/app/bin.bin
     // /Users/jim/Documents/Spotify Muter/spotify-muter-darwin-x64/spotify-muter.app/Contents/Resources/app/bin.bin (spotify-muter.app)
 
+
+// TODO: Fix welcome msg position (not completely in the middle)
+// Add [Not playing on current device] length in to current size changer algorithm
+// Bridge current progress_ms
+
     var request = require('request')
     const electron = require('electron')
     const { ipcRenderer } = electron;
@@ -72,6 +77,8 @@ fs.readFile(filePath, function (err, key) {
     var placeholderpath = ""
     var backgroundPath = ""
     var apiRequestTime = 1 * 1000;
+    var apiRequestNumberDevices = 0;
+    var apiRequestNumberPlaying = 0;
     // console.log("I am out of main")
 
     //adholder path calculations
@@ -106,14 +113,15 @@ fs.readFile(filePath, function (err, key) {
         backgroundPath = "./contents/resources/app/background.jpg"
     }
 
-    if (process.platform == "darwin") {
+    if (process.platform == "win32") {
+        console.log("UNMUTED FROM THE BEGINNING WIN32")
+        nircmd('nircmd muteappvolume Spotify.exe 0')
+        muted = false;
+    } else {
         loudness.getMuted().then((adMuted) => {
             // console.log("AD MUTE START" + adMuted)
             muted = adMuted;
         })
-    } else if (process.platform === "win32") {
-        nircmd('nircmd muteappvolume Spotify.exe 0')
-        muted = false;
     }
 
     // if (err) throw err;
@@ -228,6 +236,10 @@ fs.readFile(filePath, function (err, key) {
                 function getDevices() {
                     spotifyApi.getMyDevices()
                         .then(function (data1) {
+
+                            // apiRequestNumberDevices++;
+                            // console.log(`apiRequestNumberDevices: ${apiRequestNumberDevices}`)
+
                             for (var i = 0; i < data1.body.devices.length; i++) {
                                 if (data1.body.devices[i].name.toLowerCase() === hostDeviceName && data1.body.devices[i].is_active === true) { //&& data1.body.devices[parseInt(i)].is_active === true
                                     playingOnCurrentDevice = true;
@@ -254,6 +266,10 @@ fs.readFile(filePath, function (err, key) {
                     spotifyApi.getMyCurrentPlayingTrack({
                     })
                         .then(function (data) { // need to be able to detect an ad playing and show it -- done
+
+                            // apiRequestNumberPlaying++;
+                            // console.log(`apiRequestNumberPlaying: ${apiRequestNumberPlaying}`)
+
                             // Output items
                             console.log(`DATA CODE: ${data.statusCode}`)
                             // console.log("Now Playing: ", data);
@@ -300,6 +316,16 @@ fs.readFile(filePath, function (err, key) {
                                             console.log('Could not refresh access token', err);
                                         }
                                     );
+
+                                    if (process.platform == "win32") { //make sure speakers are unmuted after computer sleep. 
+                                        nircmd('nircmd muteappvolume Spotify.exe 0')
+                                        muted = false;
+                                    } else {
+                                        loudness.getMuted().then((adMuted) => {
+                                            // console.log("AD MUTE START" + adMuted)
+                                            muted = adMuted;
+                                        })
+                                    }
                                 }
                                 else {
                                     clearInterval(getPlayingTime) // reset (for beginning so it can update gui elements); before getting changed to 5000ms again
@@ -351,7 +377,7 @@ fs.readFile(filePath, function (err, key) {
                                             }
 
                                         }
-                                        // console.log(chosen)
+                                        console.log(chosen)
                                         if (chosen === 0) {
                                             document.body.style.backgroundColor = `rgba(${paletteCopy.DarkMuted.rgb[0]}, ${paletteCopy.DarkMuted.rgb[1]}, ${paletteCopy.DarkMuted.rgb[2]}, 0.5)`
                                             // console.log("I am in 0")
@@ -391,11 +417,20 @@ fs.readFile(filePath, function (err, key) {
                                         document.getElementById('songRunTime').innerHTML = `Duration: ${millisToMinutesAndSeconds(data.body.item.duration_ms)}`
                                         // debugger;
 
-                                        if ((data.body.item.duration_ms - data.body.progress_ms) > 30000) { // if song is ending
-                                            clearInterval(getPlayingTime) // use setTimeout
-                                            // apiRequestTime = 1000;
-                                            apiRequestTime = 5000;
-                                            getPlayingTime = setInterval(getPlaying, apiRequestTime);
+                                        if ((data.body.item.duration_ms - data.body.progress_ms) > 30000) { // if song is not ending
+                                            if (data.body.progress_ms < 7000) {
+                                                setTimeout(() => {
+                                                    clearInterval(getPlayingTime) // use setTimeout
+                                                    // apiRequestTime = 1000;
+                                                    apiRequestTime = 5000;
+                                                    getPlayingTime = setInterval(getPlaying, apiRequestTime);
+                                                }, 2000);
+                                            } else {
+                                                clearInterval(getPlayingTime) // use setTimeout
+                                                    // apiRequestTime = 1000;
+                                                    apiRequestTime = 5000;
+                                                    getPlayingTime = setInterval(getPlaying, apiRequestTime);
+                                            }
                                             console.log("SONG NOT ENDING SEGMENT")
                                         } else if (data.statusCode == 204) { // if no song is playing
                                             // clearInterval(getPlayingTime)
@@ -599,10 +634,19 @@ fs.readFile(filePath, function (err, key) {
                                         // current progress
 
                                         if ((data.body.item.duration_ms - data.body.progress_ms) > 30000) { // if song is ending
-                                            clearInterval(getPlayingTime) // use setTimeout
-                                            // apiRequestTime = 1000;
-                                            apiRequestTime = 5000;
-                                            getPlayingTime = setInterval(getPlaying, apiRequestTime);
+                                            if (data.body.progress_ms < 7000) {
+                                                setTimeout(() => {
+                                                    clearInterval(getPlayingTime) // use setTimeout
+                                                    // apiRequestTime = 1000;
+                                                    apiRequestTime = 5000;
+                                                    getPlayingTime = setInterval(getPlaying, apiRequestTime);
+                                                }, 2000);
+                                            } else {
+                                                clearInterval(getPlayingTime) // use setTimeout
+                                                    // apiRequestTime = 1000;
+                                                    apiRequestTime = 5000;
+                                                    getPlayingTime = setInterval(getPlaying, apiRequestTime);
+                                            }
                                             console.log("SONG NOT ENDING SEGMENT")
                                         } else if (data.statusCode == 204) { // if no song is playing
                                             // clearInterval(getPlayingTime)
@@ -726,22 +770,7 @@ fs.readFile(filePath, function (err, key) {
                     previousProgress = currentProgress;
                     //FIX: Access Token Refresh Loop: http://prntscr.com/o09vg6 - Fixed
                     //refresh token every 3500 seconds. Expiration time is 6000 seconds or 1 hour.
-                    if (new Date().getTime() - tokenExpTime > 3500000 && tokenRefTimer == 0) {
-                        spotifyApi.refreshAccessToken().then(
-                            function (data) {
-
-
-                                // Save the access token so that it's used in future calls
-                                spotifyApi.setAccessToken(data.body['access_token']);
-                                tokenExpTime = new Date().getTime();
-                                console.log(`The access token has been refreshed! EXP in ${tokenExpTime} `);
-                                tokenRefTimer++;
-                            },
-                            function (err) {
-                                console.log('Could not refresh access token', err);
-                            }
-                        );
-                    }
+                    
                     // }
                     // setInterval(refreshToken, 3500 * 1000)
 
@@ -777,6 +806,26 @@ fs.readFile(filePath, function (err, key) {
                     // console.log(muted)
 
                 }
+                function checkToken() {
+                    console.log("Getting Token")
+                    if (new Date().getTime() - tokenExpTime > 3500000 && tokenRefTimer == 0) {
+                        spotifyApi.refreshAccessToken().then(
+                            function (data) {
+
+
+                                // Save the access token so that it's used in future calls
+                                spotifyApi.setAccessToken(data.body['access_token']);
+                                tokenExpTime = new Date().getTime();
+                                console.log(`The access token has been refreshed! EXP in ${tokenExpTime} `);
+                                tokenRefTimer++;
+                            },
+                            function (err) {
+                                console.log('Could not refresh access token', err);
+                            }
+                        );
+                    }
+                }
+                setInterval(checkToken, 1 * 1000)
                 //     setInterval(getDevices, 1 * 1000) // getDevices every 1 sec
                 //   var getPlayingTime = setInterval(getPlaying, 1 * 1000) //end of get playing //REPEATED REQUESTS NEED TO DEBUG
 
