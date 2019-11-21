@@ -20,9 +20,9 @@ fs.readFile(filePath, function (err, key) {
     // /Users/jim/Documents/Spotify Muter/spotify-muter-darwin-x64/spotify-muter.app/Contents/Resources/app/bin.bin (spotify-muter.app)
 
 
-// TODO: Fix welcome msg position (not completely in the middle)
-// Add [Not playing on current device] length in to current size changer algorithm
-// Bridge current progress_ms
+    // TODO: Fix welcome msg position (not completely in the middle)
+    // Add [Not playing on current device] length in to current size changer algorithm
+    // Bridge current progress_ms
 
     var request = require('request')
     const electron = require('electron')
@@ -79,6 +79,9 @@ fs.readFile(filePath, function (err, key) {
     var apiRequestTime = 1 * 1000;
     var apiRequestNumberDevices = 0;
     var apiRequestNumberPlaying = 0;
+    var currentTime = 0;
+    var doUpdateCurrentTime = false;
+    var updateCurrentTimeIsPlaying = true;
     // console.log("I am out of main")
 
     //adholder path calculations
@@ -329,7 +332,8 @@ fs.readFile(filePath, function (err, key) {
                                 }
                                 else {
                                     clearInterval(getPlayingTime) // reset (for beginning so it can update gui elements); before getting changed to 5000ms again
-                                    // apiRequestTime = 1000;
+                                    currentTime = data.body.progress_ms;
+                                    updateCurrentTimeIsPlaying = data.body.is_playing;
                                     apiRequestTime = 1000;
                                     getPlayingTime = setInterval(getPlaying, apiRequestTime);
                                     try { //see if its a song on another device
@@ -414,7 +418,14 @@ fs.readFile(filePath, function (err, key) {
                                             document.getElementById('explicit').innerHTML = `Explicit Rating by Spotify: Not Explicit`
                                         }
                                         //run time
-                                        document.getElementById('songRunTime').innerHTML = `Duration: ${millisToMinutesAndSeconds(data.body.item.duration_ms)}`
+
+                                        // document.getElementById('songRunTime').innerHTML = `Duration: ${millisToMinutesAndSeconds(data.body.item.duration_ms)}`
+
+                                        document.getElementById('currentTime').innerHTML = `Current Progress: ${millisToMinutesAndSeconds(data.body.item.progress_ms)} `
+                                        currentTime = data.body.item.progress_ms;
+                                        updateCurrentTimeIsPlaying = data.body.item.is_playing;
+
+
                                         // debugger;
 
                                         if ((data.body.item.duration_ms - data.body.progress_ms) > 30000) { // if song is not ending
@@ -424,12 +435,14 @@ fs.readFile(filePath, function (err, key) {
                                                     // apiRequestTime = 1000;
                                                     apiRequestTime = 5000;
                                                     getPlayingTime = setInterval(getPlaying, apiRequestTime);
+                                                    doUpdateCurrentTime = true;
                                                 }, 2000);
                                             } else {
                                                 clearInterval(getPlayingTime) // use setTimeout
-                                                    // apiRequestTime = 1000;
-                                                    apiRequestTime = 5000;
-                                                    getPlayingTime = setInterval(getPlaying, apiRequestTime);
+                                                // apiRequestTime = 1000;
+                                                apiRequestTime = 5000;
+                                                getPlayingTime = setInterval(getPlaying, apiRequestTime);
+                                                doUpdateCurrentTime = true;
                                             }
                                             console.log("SONG NOT ENDING SEGMENT")
                                         } else if (data.statusCode == 204) { // if no song is playing
@@ -454,6 +467,7 @@ fs.readFile(filePath, function (err, key) {
                                             clearInterval(getPlayingTime)
                                             apiRequestTime = 1000;
                                             getPlayingTime = setTimeout(getPlaying, apiRequestTime)
+                                            doUpdateCurrentTime = false;
                                         }
 
                                         console.log(`${apiRequestTime} + 1`)
@@ -464,6 +478,8 @@ fs.readFile(filePath, function (err, key) {
 
                                         //current time
                                         document.getElementById('currentTime').innerHTML = `Current Progress: ${millisToMinutesAndSeconds(data.body.progress_ms)}`
+                                        currentTime = data.body.progress_ms;
+                                        updateCurrentTimeIsPlaying = data.body.is_playing;
                                     } catch (err) { //its an ad... on another device
                                         if (data.body.currently_playing_type === 'ad') {
                                             document.getElementById('nowPlaying').innerHTML = `Spotify is currently playing an AD. [NOT ON CURRENT DEVICE]` //ad
@@ -488,6 +504,8 @@ fs.readFile(filePath, function (err, key) {
                             }
                             else if (playingOnCurrentDevice) { // playing on current device
                                 currentProgress = data.body.progress_ms;
+                                currentTime = data.body.progress_ms;
+                                updateCurrentTimeIsPlaying = data.body.is_playing;
                                 // console.log(`DATA CODE: ${data.statusCode}`)
                                 // console.log(`previous progress: ${previousProgress}`)
                                 // console.log(`current progress: ${currentProgress}`)
@@ -622,6 +640,8 @@ fs.readFile(filePath, function (err, key) {
                                         }
                                         //run time
                                         document.getElementById('songRunTime').innerHTML = `Duration: ${millisToMinutesAndSeconds(data.body.item.duration_ms)} `
+                                        currentTime = data.body.item.progress_ms;
+
                                         // if (data.body.item.duration_ms - data.body.progress_ms<10000){ // if song is ending
                                         //     apiRequestTime = 1;
                                         //     clearInterval(getPlayingTime);
@@ -633,19 +653,21 @@ fs.readFile(filePath, function (err, key) {
                                         // console.log(`${apiRequestTime}+2`)
                                         // current progress
 
-                                        if ((data.body.item.duration_ms - data.body.progress_ms) > 30000) { // if song is ending
+                                        if ((data.body.item.duration_ms - data.body.progress_ms) > 30000) { // if song is not ending
                                             if (data.body.progress_ms < 7000) {
                                                 setTimeout(() => {
                                                     clearInterval(getPlayingTime) // use setTimeout
                                                     // apiRequestTime = 1000;
                                                     apiRequestTime = 5000;
                                                     getPlayingTime = setInterval(getPlaying, apiRequestTime);
+                                                    doUpdateCurrentTime = true;
                                                 }, 2000);
                                             } else {
                                                 clearInterval(getPlayingTime) // use setTimeout
-                                                    // apiRequestTime = 1000;
-                                                    apiRequestTime = 5000;
-                                                    getPlayingTime = setInterval(getPlaying, apiRequestTime);
+                                                // apiRequestTime = 1000;
+                                                apiRequestTime = 5000;
+                                                getPlayingTime = setInterval(getPlaying, apiRequestTime);
+                                                doUpdateCurrentTime = true;
                                             }
                                             console.log("SONG NOT ENDING SEGMENT")
                                         } else if (data.statusCode == 204) { // if no song is playing
@@ -670,6 +692,7 @@ fs.readFile(filePath, function (err, key) {
                                             clearInterval(getPlayingTime)
                                             apiRequestTime = 1000;
                                             getPlayingTime = setTimeout(getPlaying, apiRequestTime)
+                                            doUpdateCurrentTime = false;
                                         }
 
                                         console.log(`${apiRequestTime} + 1`)
@@ -679,6 +702,9 @@ fs.readFile(filePath, function (err, key) {
                                         console.log("----------------------")
 
                                         document.getElementById('currentTime').innerHTML = `Current Progress: ${millisToMinutesAndSeconds(data.body.progress_ms)} `
+                                        currentTime = data.body.progress_ms;
+
+
                                         // robot.keyTap("audio_mute");
                                         if (data.body.item.name != "ad" && muted === true) { //unmute if ad stops playing
                                             if (process.platform === "win32") {
@@ -770,7 +796,7 @@ fs.readFile(filePath, function (err, key) {
                     previousProgress = currentProgress;
                     //FIX: Access Token Refresh Loop: http://prntscr.com/o09vg6 - Fixed
                     //refresh token every 3500 seconds. Expiration time is 6000 seconds or 1 hour.
-                    
+
                     // }
                     // setInterval(refreshToken, 3500 * 1000)
 
@@ -826,6 +852,16 @@ fs.readFile(filePath, function (err, key) {
                     }
                 }
                 setInterval(checkToken, 1 * 1000)
+
+                function updateCurrentTime() {
+                    if (doUpdateCurrentTime === true && updateCurrentTimeIsPlaying === true) {
+                        currentTime += 1000;
+                        document.getElementById('currentTime').innerHTML = `Current Progress: ${millisToMinutesAndSeconds(currentTime)} `
+                        console.log("UPDATE CURRENT TIME")
+                    }
+
+                }
+                setInterval(updateCurrentTime, 1 * 1000)
                 //     setInterval(getDevices, 1 * 1000) // getDevices every 1 sec
                 //   var getPlayingTime = setInterval(getPlaying, 1 * 1000) //end of get playing //REPEATED REQUESTS NEED TO DEBUG
 
