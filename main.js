@@ -298,7 +298,7 @@ fs.readFile(filePath, function (err, key) {
                                     document.getElementById('currentTime').style.fontSize = "large"
                                     document.getElementById('blockingStatus').style.fontSize = "large"
                                     document.getElementById('sticky').style.fontSize = "large"
-
+                                    document.title = `SpotiMuter | AD Block Mode: ${appConfig.blockAds ? "Enabled" : "Disabled"}`;
                                     clearInterval(getPlayingTime)
                                     apiRequestTime = 10000;
                                     getPlayingTime = setInterval(getPlaying, apiRequestTime)
@@ -358,7 +358,10 @@ fs.readFile(filePath, function (err, key) {
                                             document.getElementById('blockingStatus').style.fontSize = "large"
                                             document.getElementById('sticky').style.fontSize = "large"
                                         }
+                                        //set album cover
                                         document.getElementById("albumCover").src = data.body.item.album.images[1].url
+                                        //set barText
+                                        document.title = `${data.body.item.artists[0].name}: ${data.body.item.name} | AD Block Mode: ${appConfig.blockAds ? "Enabled" : "Disabled"} - SpotiMuter`;
                                         // remove background img
                                         document.body.style.backgroundImage = ``
                                         //set background using k-means clustering
@@ -498,6 +501,7 @@ fs.readFile(filePath, function (err, key) {
                                             document.getElementById('currentTime').style.fontSize = "large"
                                             document.getElementById('blockingStatus').style.fontSize = "large"
                                             document.getElementById('sticky').style.fontSize = "large"
+                                            document.title = `Currently Playing AD | AD Block Mode: ${appConfig.blockAds ? "Enabled" : "Disabled"} - SpotiMuter`;
                                         }
                                     }
                                 }
@@ -530,6 +534,7 @@ fs.readFile(filePath, function (err, key) {
                                         document.getElementById('currentTime').style.fontSize = "large"
                                         document.getElementById('blockingStatus').style.fontSize = "large"
                                         document.getElementById('sticky').style.fontSize = "large"
+                                        document.title = `SpotiMuter | AD Block Mode: ${appConfig.blockAds ? "Enabled" : "Disabled"}`;
                                         clearInterval(getPlayingTime)
                                         apiRequestTime = 10000;
                                         getPlayingTime = setInterval(getPlaying, apiRequestTime)
@@ -578,6 +583,8 @@ fs.readFile(filePath, function (err, key) {
                                             document.getElementById('blockingStatus').style.fontSize = "large"
                                             document.getElementById('sticky').style.fontSize = "large"
                                         }
+                                        //set barText
+                                        document.title = `${data.body.item.artists[0].name}: ${data.body.item.name} | AD Block Mode: ${appConfig.blockAds ? "Enabled" : "Disabled"} - SpotiMuter`;
                                         //set album cover
                                         document.getElementById("albumCover").src = data.body.item.album.images[1].url
                                         // remove background img
@@ -737,6 +744,7 @@ fs.readFile(filePath, function (err, key) {
                                     document.getElementById('currentTime').style.fontSize = "large"
                                     document.getElementById('blockingStatus').style.fontSize = "large"
                                     document.getElementById('sticky').style.fontSize = "large"
+                                    document.title = `Currently Playing AD | AD Block Mode: ${appConfig.blockAds ? "Enabled" : "Disabled"} - SpotiMuter`;
                                     if (appConfig.blockAds === true) {
                                         if (data.body.currently_playing_type === "ad" && muted === false && (data.body.is_playing === true)) { //mute if ad starts previousProgress != currentProgress
                                             if (process.platform === "win32") {
