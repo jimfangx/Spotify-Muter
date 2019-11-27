@@ -82,6 +82,8 @@ fs.readFile(filePath, function (err, key) {
     var currentTime = 0;
     var doUpdateCurrentTime = false;
     var updateCurrentTimeIsPlaying = true;
+    var adPlaying = false;
+    var currentlyPlaying = true;
     // console.log("I am out of main")
 
     //adholder path calculations
@@ -204,7 +206,7 @@ fs.readFile(filePath, function (err, key) {
                         authUserName = data.body.display_name;
                         pictureURL = data.body.images[0].url;
                         document.getElementById("avatar").src = pictureURL;
-                        document.getElementById("usersNameText").innerHTML = `Welcome, ${authUserName} (Logout)`;
+                        document.getElementById("usersNameText").innerHTML = `Welcome, ${authUserName} (Logout)     `;
                         console.log(document.getElementById("usersNameText").innerHTML)
                         var usersNameTextWidth = document.getElementById("usersNameText").clientWidth;
                         console.log(usersNameTextWidth)
@@ -302,6 +304,7 @@ fs.readFile(filePath, function (err, key) {
                                     clearInterval(getPlayingTime)
                                     apiRequestTime = 10000;
                                     getPlayingTime = setInterval(getPlaying, apiRequestTime)
+                                    currentlyPlaying = false;
                                     // getPlayingTime = setInterval(getPlaying(), apiRequestTime)
                                     console.log("204 NO PLAYING SEGMENT")
                                 } else if (data.statusCode === 401) { //401
@@ -456,6 +459,7 @@ fs.readFile(filePath, function (err, key) {
                                             clearInterval(getPlayingTime)
                                             apiRequestTime = 10000;
                                             getPlayingTime = setInterval(getPlaying, apiRequestTime)
+                                            currentlyPlaying = false;
                                             // getPlayingTime = setInterval(getPlaying(), apiRequestTime)
                                             console.log("204 NO PLAYING SEGMENT")
                                         }
@@ -464,6 +468,7 @@ fs.readFile(filePath, function (err, key) {
                                             clearInterval(getPlayingTime)
                                             apiRequestTime = 5000;
                                             getPlayingTime = setInterval(getPlaying, apiRequestTime)
+                                            adPlaying = true;
                                             console.log("AD PLAYING INTERVAL")
                                         }
                                         else {
@@ -473,11 +478,11 @@ fs.readFile(filePath, function (err, key) {
                                             doUpdateCurrentTime = false;
                                         }
 
-                                        console.log(`${apiRequestTime} + 1`)
-                                        console.log("DURATION: " + data.body.item.duration_ms)
-                                        console.log("PROGRESS: " + data.body.progress_ms)
-                                        // console.log(getPlayingTime)
-                                        console.log("----------------------")
+                                        // console.log(`${apiRequestTime} + 1`)
+                                        // console.log("DURATION: " + data.body.item.duration_ms)
+                                        // console.log("PROGRESS: " + data.body.progress_ms)
+                                        // // console.log(getPlayingTime)
+                                        // console.log("----------------------")
 
                                         //current time
                                         document.getElementById('currentTime').innerHTML = `Current Progress: ${millisToMinutesAndSeconds(data.body.progress_ms)}`
@@ -485,6 +490,7 @@ fs.readFile(filePath, function (err, key) {
                                         updateCurrentTimeIsPlaying = data.body.is_playing;
                                     } catch (err) { //its an ad... on another device
                                         if (data.body.currently_playing_type === 'ad') {
+                                            adPlaying = true;
                                             document.getElementById('nowPlaying').innerHTML = `Spotify is currently playing an AD. [NOT ON CURRENT DEVICE]` //ad
                                             document.getElementById('nowPlaying').style.fontSize = "2rem"
                                             document.getElementById('artist').innerHTML = ``;
@@ -538,6 +544,7 @@ fs.readFile(filePath, function (err, key) {
                                         clearInterval(getPlayingTime)
                                         apiRequestTime = 10000;
                                         getPlayingTime = setInterval(getPlaying, apiRequestTime)
+                                        currentlyPlaying = false;
                                         // getPlayingTime = setInterval(getPlaying(), apiRequestTime)
                                         console.log("204 NO PLAYING SEGMENT")
                                     } else if (data.statusCode === 401) { //401
@@ -562,8 +569,8 @@ fs.readFile(filePath, function (err, key) {
                                         apiRequestTime = 1000;
                                         getPlayingTime = setInterval(getPlaying, apiRequestTime);
                                         //set now playing
-                                        // console.log("LEN" + data.body.item.name.length)
-                                        if (data.body.item.name.length > 45) {
+                                        console.log("LEN" + data.body.item.name.length)
+                                        if (data.body.item.name.length >= 36) {
                                             document.getElementById('nowPlaying').innerHTML = `${data.body.item.name}`
                                             document.getElementById('nowPlaying').style.fontSize = "1.5rem"
                                             document.getElementById('artist').style.fontSize = "medium"
@@ -685,6 +692,7 @@ fs.readFile(filePath, function (err, key) {
                                             clearInterval(getPlayingTime)
                                             apiRequestTime = 10000;
                                             getPlayingTime = setInterval(getPlaying, apiRequestTime)
+                                            currentlyPlaying = false;
                                             // getPlayingTime = setInterval(getPlaying(), apiRequestTime)
                                             console.log("204 NO PLAYING SEGMENT")
                                         }
@@ -693,6 +701,7 @@ fs.readFile(filePath, function (err, key) {
                                             clearInterval(getPlayingTime)
                                             apiRequestTime = 5000;
                                             getPlayingTime = setInterval(getPlaying, apiRequestTime)
+                                            adPlaying = true;
                                             console.log("AD PLAYING INTERVAL")
                                         }
                                         else {
@@ -702,11 +711,11 @@ fs.readFile(filePath, function (err, key) {
                                             doUpdateCurrentTime = false;
                                         }
 
-                                        console.log(`${apiRequestTime} + 1`)
-                                        console.log("DURATION: " + data.body.item.duration_ms)
-                                        console.log("PROGRESS: " + data.body.progress_ms)
-                                        // console.log(getPlayingTime)
-                                        console.log("----------------------")
+                                        // console.log(`${apiRequestTime} + 1`)
+                                        // console.log("DURATION: " + data.body.item.duration_ms)
+                                        // console.log("PROGRESS: " + data.body.progress_ms)
+                                        // // console.log(getPlayingTime)
+                                        // console.log("----------------------")
 
                                         document.getElementById('currentTime').innerHTML = `Current Progress: ${millisToMinutesAndSeconds(data.body.progress_ms)} `
                                         currentTime = data.body.progress_ms;
@@ -842,6 +851,7 @@ fs.readFile(filePath, function (err, key) {
                 }
                 function checkToken() {
                     console.log("Getting Token")
+                    console.log(new Date().getTime() - tokenExpTime)
                     if (new Date().getTime() - tokenExpTime > 3500000 && tokenRefTimer == 0) {
                         spotifyApi.refreshAccessToken().then(
                             function (data) {
@@ -862,7 +872,7 @@ fs.readFile(filePath, function (err, key) {
                 setInterval(checkToken, 1 * 1000)
 
                 function updateCurrentTime() {
-                    if (doUpdateCurrentTime === true && updateCurrentTimeIsPlaying === true) {
+                    if (doUpdateCurrentTime === true && updateCurrentTimeIsPlaying === true && adPlaying === false) {
                         currentTime += 1000;
                         document.getElementById('currentTime').innerHTML = `Current Progress: ${millisToMinutesAndSeconds(currentTime)} `
                         console.log("UPDATE CURRENT TIME")
