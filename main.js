@@ -39,7 +39,7 @@ fs.readFile(filePath, function (err, key) {
     const { exec } = require('child_process');
     var cmd = require('node-cmd');
     const loudness = require('mwl-loudness')
-    // var { getVolume, setVolume } = require('sysvol');  
+    // var { getVolume, setVolume } = require('sysvol');
     // var robot = require("robotjs"); https://stackoverflow.com/questions/11178372/is-it-possible-to-simulate-keyboard-mouse-event-in-nodejs
 
     var generateRandomString = function (length) {
@@ -152,7 +152,7 @@ fs.readFile(filePath, function (err, key) {
 
     });
     // });
-    var authorizeURL = spotifyApi.createAuthorizeURL(scopes, state); // Start authorization process to get access token. --> https://github.com/thelinmichael/spotify-web-api-node#authorization || create auth url using wrapper init consturctor data. 
+    var authorizeURL = spotifyApi.createAuthorizeURL(scopes, state); // Start authorization process to get access token. --> https://github.com/thelinmichael/spotify-web-api-node#authorization || create auth url using wrapper init consturctor data.
     // var currentSysVol = getvolume
 
     document.getElementById('status').innerHTML = "Current Status: Authorizing..."
@@ -175,7 +175,7 @@ fs.readFile(filePath, function (err, key) {
     }
     ipcRenderer.send('windowOpenReq', authorizeURL) // requiest main process to open auth window with the auth url in var authorizeURL
 
-    ipcRenderer.on('codeCallback', (event, code) => { // received after auth success then: 
+    ipcRenderer.on('codeCallback', (event, code) => { // received after auth success then:
         // console.log(code)
 
         spotifyApi.authorizationCodeGrant(code).then( // then: gets access & refresh token using the code returned.
@@ -323,7 +323,7 @@ fs.readFile(filePath, function (err, key) {
                                         }
                                     );
 
-                                    if (process.platform == "win32") { //make sure speakers are unmuted after computer sleep. 
+                                    if (process.platform == "win32") { //make sure speakers are unmuted after computer sleep.
                                         nircmd('nircmd muteappvolume Spotify.exe 0')
                                         muted = false;
                                     } else {
@@ -659,7 +659,7 @@ fs.readFile(filePath, function (err, key) {
                                         // if (data.body.item.duration_ms - data.body.progress_ms<10000){ // if song is ending
                                         //     apiRequestTime = 1;
                                         //     clearInterval(getPlayingTime);
-                                        // } 
+                                        // }
                                         // else {
                                         //     apiRequestTime = parseInt((data.body.item.duration_ms)-10000);
                                         //     clearInterval(getPlayingTime);
@@ -852,7 +852,7 @@ fs.readFile(filePath, function (err, key) {
                 function checkToken() {
                     console.log("Getting Token")
                     console.log(new Date().getTime() - tokenExpTime)
-                    if (new Date().getTime() - tokenExpTime > 3500000 && tokenRefTimer == 0) {
+                    if (new Date().getTime() - tokenExpTime > 3500000) {
                         spotifyApi.refreshAccessToken().then(
                             function (data) {
 
@@ -973,5 +973,3 @@ fs.readFile(filePath, function (err, key) {
 
 
  // Watching for submit event in form tags
-
-
