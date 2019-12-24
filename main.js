@@ -364,7 +364,7 @@ fs.readFile(filePath, function (err, key) {
                                         //set album cover
                                         document.getElementById("albumCover").src = data.body.item.album.images[1].url
                                         //set barText
-                                        document.title = `${data.body.item.artists[0].name}: ${data.body.item.name} | AD Block Mode: ${appConfig.blockAds ? "Enabled" : "Disabled"} - SpotiMuter`;
+                                        document.title = `${data.body.item.name}: ${data.body.item.artists[0].name} | AD Block Mode: ${appConfig.blockAds ? "Enabled" : "Disabled"} - SpotiMuter`;
                                         // remove background img
                                         document.body.style.backgroundImage = ``
                                         //set background using k-means clustering
@@ -591,7 +591,7 @@ fs.readFile(filePath, function (err, key) {
                                             document.getElementById('sticky').style.fontSize = "large"
                                         }
                                         //set barText
-                                        document.title = `${data.body.item.artists[0].name}: ${data.body.item.name} | AD Block Mode: ${appConfig.blockAds ? "Enabled" : "Disabled"} - SpotiMuter`;
+                                        document.title = `${data.body.item.name}: ${data.body.item.artists[0].name} | AD Block Mode: ${appConfig.blockAds ? "Enabled" : "Disabled"} - SpotiMuter`;
                                         //set album cover
                                         document.getElementById("albumCover").src = data.body.item.album.images[1].url
                                         // remove background img
