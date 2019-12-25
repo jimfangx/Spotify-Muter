@@ -236,7 +236,7 @@ fs.readFile(filePath, function (err, key) {
                 let colorSwatch = []
                 let paletteCopy;
 
-                setInterval(getDevices, 1 * 1000) // getDevices every 1 sec
+                setInterval(getDevices, 2 * 1000) // getDevices every 1 sec
 
                 function getDevices() {
                     spotifyApi.getMyDevices()
@@ -427,9 +427,10 @@ fs.readFile(filePath, function (err, key) {
 
                                         // document.getElementById('songRunTime').innerHTML = `Duration: ${millisToMinutesAndSeconds(data.body.item.duration_ms)}`
 
-                                        document.getElementById('currentTime').innerHTML = `Current Progress: ${millisToMinutesAndSeconds(data.body.item.progress_ms)} `
-                                        currentTime = data.body.item.progress_ms;
-                                        updateCurrentTimeIsPlaying = data.body.item.is_playing;
+                                        
+                                        // document.getElementById('currentTime').innerHTML = `Current Progress: ${millisToMinutesAndSeconds(data.body.item.progress_ms)} `
+                                        // currentTime = data.body.item.progress_ms;
+                                        // updateCurrentTimeIsPlaying = data.body.item.is_playing;
 
 
                                         // debugger;
