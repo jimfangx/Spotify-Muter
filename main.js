@@ -3,6 +3,7 @@ var config = require('./config.json')
 var filePath = ""
 const Sentry = require('@sentry/electron')
 Sentry.init({ dsn: 'https://baa4d45f52ac4c14a41c981b7bae0fa8@sentry.io/1726927' });
+var appReadyTime = Date();
 
 if (config.devMode === true) {
     filePath = "bin.bin"
@@ -38,7 +39,9 @@ fs.readFile(filePath, function (err, key) {
     var Vibrant = require('node-vibrant')
     const { exec } = require('child_process');
     var cmd = require('node-cmd');
-    const loudness = require('mwl-loudness')
+    const loudness = require('mwl-loudness');
+    const flatted = require('flatted')
+    // const {parse, stringify} = require('flatted/cjs');
     // var { getVolume, setVolume } = require('sysvol');
     // var robot = require("robotjs"); https://stackoverflow.com/questions/11178372/is-it-possible-to-simulate-keyboard-mouse-event-in-nodejs
 
@@ -84,6 +87,8 @@ fs.readFile(filePath, function (err, key) {
     var updateCurrentTimeIsPlaying = true;
     var adPlaying = false;
     var currentlyPlaying = true;
+    var debuggingUserInfo;
+    var runLog = true;
     // console.log("I am out of main")
 
     //adholder path calculations
@@ -155,7 +160,7 @@ fs.readFile(filePath, function (err, key) {
     var authorizeURL = spotifyApi.createAuthorizeURL(scopes, state); // Start authorization process to get access token. --> https://github.com/thelinmichael/spotify-web-api-node#authorization || create auth url using wrapper init consturctor data.
     // var currentSysVol = getvolume
 
-    document.getElementById('status').innerHTML = "Current Status: Authorizing..."
+    document.getElementById('status').innerHTML = "Authorizing..."
     // document.getElementById('test').innerHTML = authorizeURL
     if (appConfig.blockAds === true) {
         document.getElementById('blockingStatus').innerHTML = `Currently blocking Ads: Yes`;
@@ -194,7 +199,7 @@ fs.readFile(filePath, function (err, key) {
                 console.log(
                     `Retrieved token. It expires in ${tokenExpTime / 1000} seconds!`
                 );
-                document.getElementById("status").innerHTML = "Current Status: Authorization Successful!"
+                document.getElementById("status").innerHTML = "Authorization Successful!"
                 ipcRenderer.send("authWindowCloseReq") // after getting access & refresh token, sends request to close auth window to index.js
 
                 //add wait for a few second to 1 min then changve status to "monitoring & blocking"
@@ -203,6 +208,7 @@ fs.readFile(filePath, function (err, key) {
                 spotifyApi.getMe() // get user details
                     .then(function (data) {
                         console.log('Some information about the authenticated user', data.body);
+                        debuggingUserInfo = data.body;
                         authUserName = data.body.display_name;
                         pictureURL = data.body.images[0].url;
                         document.getElementById("avatar").src = pictureURL;
@@ -277,10 +283,11 @@ fs.readFile(filePath, function (err, key) {
 
                             // Output items
                             console.log(`DATA CODE: ${data.statusCode}`)
+                            console.log(data.statusCode != 200 || data.statusCode != 401 || data.statusCode != 204)
                             // console.log("Now Playing: ", data);
                             tokenRefTimer = 0;
                             // console.log(`Token REF TIMER RESET: ${tokenRefTimer}`)
-                            document.getElementById("status").innerHTML = "Current Status: Monitoring & Blocking"
+                            document.getElementById("status").innerHTML = "Monitoring & Blocking"
                             if (playingOnCurrentDevice === false) { // not playing on current device
                                 if (data.statusCode == 204) { // check if user is not playing anything
                                     document.getElementById('nowPlaying').innerHTML = `Nothing is playing`
@@ -291,6 +298,7 @@ fs.readFile(filePath, function (err, key) {
                                     document.getElementById("albumCover").src = placeholderpath
                                     document.body.style.backgroundColor = `rgb(255,255,255)`
                                     document.body.style.backgroundImage = 'url(' + backgroundPath + ')'
+                                    // console.log(document.body.style.backgroundImage)
                                     //`url('./background.jpg')`
 
                                     document.getElementById('nowPlaying').style.fontSize = "2rem"
@@ -305,6 +313,7 @@ fs.readFile(filePath, function (err, key) {
                                     apiRequestTime = 10000;
                                     getPlayingTime = setInterval(getPlaying, apiRequestTime)
                                     currentlyPlaying = false;
+                                    runLog = true;
                                     // getPlayingTime = setInterval(getPlaying(), apiRequestTime)
                                     console.log("204 NO PLAYING SEGMENT")
                                 } else if (data.statusCode === 401) { //401
@@ -332,6 +341,35 @@ fs.readFile(filePath, function (err, key) {
                                             muted = adMuted;
                                         })
                                     }
+                                    runLog = true;
+                                }
+                                else if (data.statusCode != 200 && data.statusCode != 401 && data.statusCode != 204) { // rate limited
+                                    //write log
+                                    //change status
+                                    //display lower msg
+                                    //stop current progress meter
+                                    //stop repeated creation of err files
+                                    var errDate = new Date();
+
+                                    if (runLog) {
+                                        fs.writeFile(`./Error-log-captured-${errDate.getFullYear()}-${errDate.getMonth()}-${errDate.getDate()}-${errDate.getHours()}-${errDate.getMinutes()}-${errDate.getSeconds()}.txt`, `Error Code: ${data.statusCode}\n Date: ${Date()} \n OS: ${process.platform}; Version: ${os.release()} \n Extended Environment Info (begin on next line): \n Title: ${JSON.stringify(process.title)} \n Node Version: ${JSON.stringify(process.version)} \n Versions ${JSON.stringify(process.versions, null, "\t")} \n Architecture: ${process.arch} \n Platform: ${process.platform} \n Release: ${JSON.stringify(process.release, null, "\t")} \n execPath: ${process.execPath} \n Node Config ${JSON.stringify(process.config, null, "\t")} \n env: ${JSON.stringify(process.env, null, "\t")} \n\n END OF Extended Environment Info \n\n Host Device Name: ${hostDeviceName} \n Authed User Info: ${JSON.stringify(debuggingUserInfo, null, "\t")} \n Application Ready Time: ${appReadyTime}`, function (err) {
+                                            if (err) throw err;
+                                            console.log('Saved!');
+                                            runLog = false;
+                                        });
+                                    }
+
+                                    document.getElementById("status").innerHTML = `Errored. Code ${data.statusCode}. See note at bottom.`
+
+                                    document.getElementById("errorMsg").innerHTML = `NOTE: An error has occured. Please open an issue on <a href="https://github.com/AirFusion45/Spotify-Muter/issues">our GitHub</a> with this info. Thanks!`
+                                    if (document.body.style.backgroundImage === 'url("./background.jpg")') {
+                                        document.getElementById("errorMsg").style.color = "white";
+                                    }
+
+                                    doUpdateCurrentTime = false;
+                                    clearInterval(getPlayingTime)
+                                    apiRequestTime = 5000;
+                                    getPlayingTime = setInterval(getPlaying, apiRequestTime);
                                 }
                                 else {
                                     clearInterval(getPlayingTime) // reset (for beginning so it can update gui elements); before getting changed to 5000ms again
@@ -339,6 +377,7 @@ fs.readFile(filePath, function (err, key) {
                                     updateCurrentTimeIsPlaying = data.body.is_playing;
                                     apiRequestTime = 1000;
                                     getPlayingTime = setInterval(getPlaying, apiRequestTime);
+                                    runLog = true;
                                     try { //see if its a song on another device
                                         // console.log('LEN' + data.body.item.name.length)
                                         if (data.body.item.name.length > 31) {
@@ -361,6 +400,7 @@ fs.readFile(filePath, function (err, key) {
                                             document.getElementById('blockingStatus').style.fontSize = "large"
                                             document.getElementById('sticky').style.fontSize = "large"
                                         }
+
                                         //set album cover
                                         document.getElementById("albumCover").src = data.body.item.album.images[1].url
                                         //set barText
@@ -427,7 +467,7 @@ fs.readFile(filePath, function (err, key) {
 
                                         // document.getElementById('songRunTime').innerHTML = `Duration: ${millisToMinutesAndSeconds(data.body.item.duration_ms)}`
 
-                                        
+
                                         // document.getElementById('currentTime').innerHTML = `Current Progress: ${millisToMinutesAndSeconds(data.body.item.progress_ms)} `
                                         // currentTime = data.body.item.progress_ms;
                                         // updateCurrentTimeIsPlaying = data.body.item.is_playing;
@@ -546,6 +586,7 @@ fs.readFile(filePath, function (err, key) {
                                         apiRequestTime = 10000;
                                         getPlayingTime = setInterval(getPlaying, apiRequestTime)
                                         currentlyPlaying = false;
+                                        runLog = true;
                                         // getPlayingTime = setInterval(getPlaying(), apiRequestTime)
                                         console.log("204 NO PLAYING SEGMENT")
                                     } else if (data.statusCode === 401) { //401
@@ -563,12 +604,42 @@ fs.readFile(filePath, function (err, key) {
                                                 console.log('Could not refresh access token', err);
                                             }
                                         );
+                                        runLog = true;
+                                    }
+                                    else if (data.statusCode != 200 && data.statusCode != 401 && data.statusCode != 204) { // rate limited
+                                        //write log
+                                        //change status
+                                        //display lower msg
+                                        //stop current progress meter
+                                        //stop repeated creation of err files
+                                        var errDate = new Date();
+    
+                                        if (runLog) {
+                                            fs.writeFile(`./Error-log-captured-${errDate.getFullYear()}-${errDate.getMonth()}-${errDate.getDate()}-${errDate.getHours()}-${errDate.getMinutes()}-${errDate.getSeconds()}.txt`, `Error Code: ${data.statusCode}\n Date: ${Date()} \n OS: ${process.platform}; Version: ${os.release()} \n Extended Environment Info (begin on next line): \n Title: ${JSON.stringify(process.title)} \n Node Version: ${JSON.stringify(process.version)} \n Versions ${JSON.stringify(process.versions, null, "\t")} \n Architecture: ${process.arch} \n Platform: ${process.platform} \n Release: ${JSON.stringify(process.release, null, "\t")} \n execPath: ${process.execPath} \n Node Config ${JSON.stringify(process.config, null, "\t")} \n env: ${JSON.stringify(process.env, null, "\t")} \n\n END OF Extended Environment Info \n\n Host Device Name: ${hostDeviceName} \n Authed User Info: ${JSON.stringify(debuggingUserInfo, null, "\t")} \n Application Ready Time: ${appReadyTime}`, function (err) {
+                                                if (err) throw err;
+                                                console.log('Saved!');
+                                                runLog = false;
+                                            });
+                                        }
+    
+                                        document.getElementById("status").innerHTML = `Errored. Code ${data.statusCode}. See note at bottom.`
+    
+                                        document.getElementById("errorMsg").innerHTML = `NOTE: An error has occured. Please open an issue on <a href="https://github.com/AirFusion45/Spotify-Muter/issues">our GitHub</a> with this info. Thanks!`
+                                        if (document.body.style.backgroundImage === 'url("./background.jpg")') {
+                                            document.getElementById("errorMsg").style.color = "white";
+                                        }
+    
+                                        doUpdateCurrentTime = false;
+                                        clearInterval(getPlayingTime)
+                                        apiRequestTime = 5000;
+                                        getPlayingTime = setInterval(getPlaying, apiRequestTime);
                                     }
                                     else { // playing song
                                         clearInterval(getPlayingTime) // reset (for beginning so it can update gui elements); before getting changed to 5000ms again
                                         // apiRequestTime = 1000;
                                         apiRequestTime = 1000;
                                         getPlayingTime = setInterval(getPlaying, apiRequestTime);
+                                        runLog = true;
                                         //set now playing
                                         console.log("LEN" + data.body.item.name.length)
                                         if (data.body.item.name.length >= 36) {
