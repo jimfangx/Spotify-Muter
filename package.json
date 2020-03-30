@@ -32,7 +32,7 @@
     "node-vibrant": "^3.1.5",
     "path": "^0.12.7",
     "querystring": "^0.2.0",
-    "request": "^2.88.0",
+    "request": "^2.88.2",
     "robotjs": "^0.5.1",
     "semver": "^6.3.0",
     "spotify-web-api-node": "^4.0.0"
