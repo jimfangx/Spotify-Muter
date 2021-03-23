@@ -34,7 +34,7 @@
     "querystring": "^0.2.0",
     "request": "^2.88.0",
     "robotjs": "^0.5.1",
-    "semver": "^6.3.0",
+    "semver": "^7.3.5",
     "spotify-web-api-node": "^4.0.0"
   },
   "bugs": {
