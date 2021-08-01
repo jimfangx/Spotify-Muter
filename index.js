@@ -39,6 +39,7 @@ var authServer = http.createServer(function (request, response) {
 //prevent app throttling / sleeping in background
 app.commandLine.appendSwitch('disable-renderer-backgrounding')
 const id = powerSaveBlocker.start('prevent-app-suspension');
+app.allowRendererProcessReuse = false
 console.log(id)
 
 app.on('ready', () => {
