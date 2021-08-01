@@ -1,0 +1,30 @@
+version: 2
+updates:
+- package-ecosystem: npm
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "13:00"
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: y18n
+    versions:
+    - 4.0.1
+    - 4.0.2
+  - dependency-name: "@sentry/electron"
+    versions:
+    - 2.2.0
+    - 2.3.0
+    - 2.4.0
+  - dependency-name: semver
+    versions:
+    - 7.3.4
+  - dependency-name: node-gyp
+    versions:
+    - 7.1.2
+  - dependency-name: electron-builder
+    versions:
+    - 22.9.1
+  - dependency-name: lodash
+    versions:
+    - 4.17.20
