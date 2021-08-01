@@ -3,6 +3,7 @@ var config = require('./config.json')
 var filePath = ""
 const Sentry = require('@sentry/electron')
 Sentry.init({ dsn: 'https://baa4d45f52ac4c14a41c981b7bae0fa8@sentry.io/1726927' });
+var appReadyTime = Date();
 
 if (config.devMode === true) {
     filePath = "bin.bin"
@@ -19,6 +20,11 @@ fs.readFile(filePath, function (err, key) {
     // MAC ./contents/resources/app/bin.bin
     // /Users/jim/Documents/Spotify Muter/spotify-muter-darwin-x64/spotify-muter.app/Contents/Resources/app/bin.bin (spotify-muter.app)
 
+
+    // TODO: Fix welcome msg position (not completely in the middle)
+    // Add [Not playing on current device] length in to current size changer algorithm
+    // Bridge current progress_ms
+
     var request = require('request')
     const electron = require('electron')
     const { ipcRenderer } = electron;
@@ -33,8 +39,10 @@ fs.readFile(filePath, function (err, key) {
     var Vibrant = require('node-vibrant')
     const { exec } = require('child_process');
     var cmd = require('node-cmd');
-    const loudness = require('mwl-loudness')
-    // var { getVolume, setVolume } = require('sysvol');  
+    const loudness = require('mwl-loudness');
+    const flatted = require('flatted')
+    // const {parse, stringify} = require('flatted/cjs');
+    // var { getVolume, setVolume } = require('sysvol');
     // var robot = require("robotjs"); https://stackoverflow.com/questions/11178372/is-it-possible-to-simulate-keyboard-mouse-event-in-nodejs
 
     var generateRandomString = function (length) {
@@ -71,6 +79,17 @@ fs.readFile(filePath, function (err, key) {
     var adholderPath = ""
     var placeholderpath = ""
     var backgroundPath = ""
+    var apiRequestTime = 1 * 1000;
+    var apiRequestNumberDevices = 0;
+    var apiRequestNumberPlaying = 0;
+    var currentTime = 0;
+    var doUpdateCurrentTime = false;
+    var updateCurrentTimeIsPlaying = true;
+    var adPlaying = false;
+    var currentlyPlaying = true;
+    var debuggingUserInfo;
+    var runLog = true;
+    // console.log("I am out of main")
 
     //adholder path calculations
     if (config.devMode === true) {
@@ -104,14 +123,15 @@ fs.readFile(filePath, function (err, key) {
         backgroundPath = "./contents/resources/app/background.jpg"
     }
 
-    if (process.platform == "darwin") {
+    if (process.platform == "win32") {
+        console.log("UNMUTED FROM THE BEGINNING WIN32")
+        nircmd('nircmd muteappvolume Spotify.exe 0')
+        muted = false;
+    } else {
         loudness.getMuted().then((adMuted) => {
             // console.log("AD MUTE START" + adMuted)
             muted = adMuted;
         })
-    } else if (process.platform === "win32") {
-        nircmd('nircmd muteappvolume Spotify.exe 0')
-        muted = false;
     }
 
     // if (err) throw err;
@@ -137,10 +157,10 @@ fs.readFile(filePath, function (err, key) {
 
     });
     // });
-    var authorizeURL = spotifyApi.createAuthorizeURL(scopes, state); // Start authorization process to get access token. --> https://github.com/thelinmichael/spotify-web-api-node#authorization || create auth url using wrapper init consturctor data. 
+    var authorizeURL = spotifyApi.createAuthorizeURL(scopes, state); // Start authorization process to get access token. --> https://github.com/thelinmichael/spotify-web-api-node#authorization || create auth url using wrapper init consturctor data.
     // var currentSysVol = getvolume
 
-    document.getElementById('status').innerHTML = "Current Status: Authorizing..."
+    document.getElementById('status').innerHTML = "Authorizing..."
     // document.getElementById('test').innerHTML = authorizeURL
     if (appConfig.blockAds === true) {
         document.getElementById('blockingStatus').innerHTML = `Currently blocking Ads: Yes`;
@@ -160,7 +180,7 @@ fs.readFile(filePath, function (err, key) {
     }
     ipcRenderer.send('windowOpenReq', authorizeURL) // requiest main process to open auth window with the auth url in var authorizeURL
 
-    ipcRenderer.on('codeCallback', (event, code) => { // received after auth success then: 
+    ipcRenderer.on('codeCallback', (event, code) => { // received after auth success then:
         // console.log(code)
 
         spotifyApi.authorizationCodeGrant(code).then( // then: gets access & refresh token using the code returned.
@@ -179,25 +199,26 @@ fs.readFile(filePath, function (err, key) {
                 console.log(
                     `Retrieved token. It expires in ${tokenExpTime / 1000} seconds!`
                 );
-                document.getElementById("status").innerHTML = "Current Status: Authorization Successful!"
+                document.getElementById("status").innerHTML = "Authorization Successful!"
                 ipcRenderer.send("authWindowCloseReq") // after getting access & refresh token, sends request to close auth window to index.js
 
                 //add wait for a few second to 1 min then changve status to "monitoring & blocking"
                 let authUserName = ""
                 let pictureURL = ""
-                spotifyApi.getMe()
+                spotifyApi.getMe() // get user details
                     .then(function (data) {
                         console.log('Some information about the authenticated user', data.body);
+                        debuggingUserInfo = data.body;
                         authUserName = data.body.display_name;
                         pictureURL = data.body.images[0].url;
                         document.getElementById("avatar").src = pictureURL;
-                        document.getElementById("usersNameText").innerHTML = `Welcome, ${authUserName} (Logout)`;
+                        document.getElementById("usersNameText").innerHTML = `Welcome, ${authUserName} (Logout)     `;
                         console.log(document.getElementById("usersNameText").innerHTML)
                         var usersNameTextWidth = document.getElementById("usersNameText").clientWidth;
                         console.log(usersNameTextWidth)
                         var viewPortWidth = document.documentElement.clientWidth;
                         console.log(viewPortWidth)
-                        var avatarPos = parseInt((viewPortWidth-usersNameTextWidth)-60)
+                        var avatarPos = parseInt((viewPortWidth - usersNameTextWidth) - 60)
                         console.log(`avatarPOS: ${avatarPos}`)
                         document.getElementById("avatarImg").style.left = `${avatarPos}px`;
                     }, function (err) {
@@ -221,9 +242,15 @@ fs.readFile(filePath, function (err, key) {
                 let colorSwatch = []
                 let paletteCopy;
 
-                function getPlaying() { // get current playing every 3 (now think its 1 sec) seconds, and updates HTML.
+                setInterval(getDevices, 2 * 1000) // getDevices every 1 sec
+
+                function getDevices() {
                     spotifyApi.getMyDevices()
                         .then(function (data1) {
+
+                            // apiRequestNumberDevices++;
+                            // console.log(`apiRequestNumberDevices: ${apiRequestNumberDevices}`)
+
                             for (var i = 0; i < data1.body.devices.length; i++) {
                                 if (data1.body.devices[i].name.toLowerCase() === hostDeviceName && data1.body.devices[i].is_active === true) { //&& data1.body.devices[parseInt(i)].is_active === true
                                     playingOnCurrentDevice = true;
@@ -236,18 +263,31 @@ fs.readFile(filePath, function (err, key) {
                         }, function (err) {
                             console.error(err);
                         });
-                    //     console.log(`Device Data: ${data1.body}`)
+                }
+                //     console.log(`Device Data: ${data1.body}`)
+                // var getPlayingTime = setInterval(getPlaying, apiRequestTime) //end of get playing //REPEATED REQUESTS NEED TO DEBUG
+                // var getPlayingTime = setTimeout(getPlaying(), 1*1000)
 
+                var getPlayingTime = setInterval(getPlaying, apiRequestTime)
 
+                // setTimeout(getPlaying, apiRequestTime);
+                // getPlaying();
+
+                function getPlaying() { // get current playing every 3 (now think its 1 sec) seconds, and updates HTML.
                     spotifyApi.getMyCurrentPlayingTrack({
                     })
                         .then(function (data) { // need to be able to detect an ad playing and show it -- done
+
+                            // apiRequestNumberPlaying++;
+                            // console.log(`apiRequestNumberPlaying: ${apiRequestNumberPlaying}`)
+
                             // Output items
                             console.log(`DATA CODE: ${data.statusCode}`)
+                            console.log(data.statusCode != 200 || data.statusCode != 401 || data.statusCode != 204)
                             // console.log("Now Playing: ", data);
                             tokenRefTimer = 0;
                             // console.log(`Token REF TIMER RESET: ${tokenRefTimer}`)
-                            document.getElementById("status").innerHTML = "Current Status: Monitoring & Blocking"
+                            document.getElementById("status").innerHTML = "Monitoring & Blocking"
                             if (playingOnCurrentDevice === false) { // not playing on current device
                                 if (data.statusCode == 204) { // check if user is not playing anything
                                     document.getElementById('nowPlaying').innerHTML = `Nothing is playing`
@@ -258,6 +298,7 @@ fs.readFile(filePath, function (err, key) {
                                     document.getElementById("albumCover").src = placeholderpath
                                     document.body.style.backgroundColor = `rgb(255,255,255)`
                                     document.body.style.backgroundImage = 'url(' + backgroundPath + ')'
+                                    // console.log(document.body.style.backgroundImage)
                                     //`url('./background.jpg')`
 
                                     document.getElementById('nowPlaying').style.fontSize = "2rem"
@@ -267,6 +308,14 @@ fs.readFile(filePath, function (err, key) {
                                     document.getElementById('currentTime').style.fontSize = "large"
                                     document.getElementById('blockingStatus').style.fontSize = "large"
                                     document.getElementById('sticky').style.fontSize = "large"
+                                    document.title = `SpotiMuter | AD Block Mode: ${appConfig.blockAds ? "Enabled" : "Disabled"}`;
+                                    clearInterval(getPlayingTime)
+                                    apiRequestTime = 10000;
+                                    getPlayingTime = setInterval(getPlaying, apiRequestTime)
+                                    currentlyPlaying = false;
+                                    runLog = true;
+                                    // getPlayingTime = setInterval(getPlaying(), apiRequestTime)
+                                    console.log("204 NO PLAYING SEGMENT")
                                 } else if (data.statusCode === 401) { //401
                                     // reauth
                                     console.log("reauthorizing")
@@ -282,8 +331,53 @@ fs.readFile(filePath, function (err, key) {
                                             console.log('Could not refresh access token', err);
                                         }
                                     );
+
+                                    if (process.platform == "win32") { //make sure speakers are unmuted after computer sleep.
+                                        nircmd('nircmd muteappvolume Spotify.exe 0')
+                                        muted = false;
+                                    } else {
+                                        loudness.getMuted().then((adMuted) => {
+                                            // console.log("AD MUTE START" + adMuted)
+                                            muted = adMuted;
+                                        })
+                                    }
+                                    runLog = true;
+                                }
+                                else if (data.statusCode != 200 && data.statusCode != 401 && data.statusCode != 204) { // rate limited
+                                    //write log
+                                    //change status
+                                    //display lower msg
+                                    //stop current progress meter
+                                    //stop repeated creation of err files
+                                    var errDate = new Date();
+
+                                    if (runLog) {
+                                        fs.writeFile(`./Error-log-captured-${errDate.getFullYear()}-${errDate.getMonth()}-${errDate.getDate()}-${errDate.getHours()}-${errDate.getMinutes()}-${errDate.getSeconds()}.txt`, `Error Code: ${data.statusCode}\n Date: ${Date()} \n OS: ${process.platform}; Version: ${os.release()} \n Extended Environment Info (begin on next line): \n Title: ${JSON.stringify(process.title)} \n Node Version: ${JSON.stringify(process.version)} \n Versions ${JSON.stringify(process.versions, null, "\t")} \n Architecture: ${process.arch} \n Platform: ${process.platform} \n Release: ${JSON.stringify(process.release, null, "\t")} \n execPath: ${process.execPath} \n Node Config ${JSON.stringify(process.config, null, "\t")} \n env: ${JSON.stringify(process.env, null, "\t")} \n\n END OF Extended Environment Info \n\n Host Device Name: ${hostDeviceName} \n Authed User Info: ${JSON.stringify(debuggingUserInfo, null, "\t")} \n Application Ready Time: ${appReadyTime}`, function (err) {
+                                            if (err) throw err;
+                                            console.log('Saved!');
+                                            runLog = false;
+                                        });
+                                    }
+
+                                    document.getElementById("status").innerHTML = `Errored. Code ${data.statusCode}. See note at bottom.`
+
+                                    document.getElementById("errorMsg").innerHTML = `NOTE: An error has occured. Please open an issue on <a href="https://github.com/AirFusion45/Spotify-Muter/issues">our GitHub</a> with this info. Thanks!`
+                                    if (document.body.style.backgroundImage === 'url("./background.jpg")') {
+                                        document.getElementById("errorMsg").style.color = "white";
+                                    }
+
+                                    doUpdateCurrentTime = false;
+                                    clearInterval(getPlayingTime)
+                                    apiRequestTime = 5000;
+                                    getPlayingTime = setInterval(getPlaying, apiRequestTime);
                                 }
                                 else {
+                                    clearInterval(getPlayingTime) // reset (for beginning so it can update gui elements); before getting changed to 5000ms again
+                                    currentTime = data.body.progress_ms;
+                                    updateCurrentTimeIsPlaying = data.body.is_playing;
+                                    apiRequestTime = 1000;
+                                    getPlayingTime = setInterval(getPlaying, apiRequestTime);
+                                    runLog = true;
                                     try { //see if its a song on another device
                                         // console.log('LEN' + data.body.item.name.length)
                                         if (data.body.item.name.length > 31) {
@@ -306,7 +400,11 @@ fs.readFile(filePath, function (err, key) {
                                             document.getElementById('blockingStatus').style.fontSize = "large"
                                             document.getElementById('sticky').style.fontSize = "large"
                                         }
+
+                                        //set album cover
                                         document.getElementById("albumCover").src = data.body.item.album.images[1].url
+                                        //set barText
+                                        document.title = `${data.body.item.name}: ${data.body.item.artists[0].name} | AD Block Mode: ${appConfig.blockAds ? "Enabled" : "Disabled"} - SpotiMuter`;
                                         // remove background img
                                         document.body.style.backgroundImage = ``
                                         //set background using k-means clustering
@@ -329,7 +427,7 @@ fs.readFile(filePath, function (err, key) {
                                             }
 
                                         }
-                                        // console.log(chosen)
+                                        console.log(chosen)
                                         if (chosen === 0) {
                                             document.body.style.backgroundColor = `rgba(${paletteCopy.DarkMuted.rgb[0]}, ${paletteCopy.DarkMuted.rgb[1]}, ${paletteCopy.DarkMuted.rgb[2]}, 0.5)`
                                             // console.log("I am in 0")
@@ -366,11 +464,74 @@ fs.readFile(filePath, function (err, key) {
                                             document.getElementById('explicit').innerHTML = `Explicit Rating by Spotify: Not Explicit`
                                         }
                                         //run time
-                                        document.getElementById('songRunTime').innerHTML = `Duration: ${millisToMinutesAndSeconds(data.body.item.duration_ms)}`
+
+                                        // document.getElementById('songRunTime').innerHTML = `Duration: ${millisToMinutesAndSeconds(data.body.item.duration_ms)}`
+
+
+                                        // document.getElementById('currentTime').innerHTML = `Current Progress: ${millisToMinutesAndSeconds(data.body.item.progress_ms)} `
+                                        // currentTime = data.body.item.progress_ms;
+                                        // updateCurrentTimeIsPlaying = data.body.item.is_playing;
+
+
+                                        // debugger;
+
+                                        if ((data.body.item.duration_ms - data.body.progress_ms) > 30000) { // if song is not ending
+                                            if (data.body.progress_ms < 7000) {
+                                                setTimeout(() => {
+                                                    clearInterval(getPlayingTime) // use setTimeout
+                                                    // apiRequestTime = 1000;
+                                                    apiRequestTime = 5000;
+                                                    getPlayingTime = setInterval(getPlaying, apiRequestTime);
+                                                    doUpdateCurrentTime = true;
+                                                }, 2000);
+                                            } else {
+                                                clearInterval(getPlayingTime) // use setTimeout
+                                                // apiRequestTime = 1000;
+                                                apiRequestTime = 5000;
+                                                getPlayingTime = setInterval(getPlaying, apiRequestTime);
+                                                doUpdateCurrentTime = true;
+                                            }
+                                            console.log("SONG NOT ENDING SEGMENT")
+                                        } else if (data.statusCode == 204) { // if no song is playing
+                                            // clearInterval(getPlayingTime)
+                                            // clearTimeout(getPlayingTime)
+                                            // clearInterval(getPlayingTime);
+                                            // apiRequestTime = 1000;
+                                            clearInterval(getPlayingTime)
+                                            apiRequestTime = 10000;
+                                            getPlayingTime = setInterval(getPlaying, apiRequestTime)
+                                            currentlyPlaying = false;
+                                            // getPlayingTime = setInterval(getPlaying(), apiRequestTime)
+                                            console.log("204 NO PLAYING SEGMENT")
+                                        }
+                                        else if (data.body.currently_playing_type === 'ad') { // playing ad
+                                            // clearInterval(getPlayingTime)
+                                            clearInterval(getPlayingTime)
+                                            apiRequestTime = 5000;
+                                            getPlayingTime = setInterval(getPlaying, apiRequestTime)
+                                            adPlaying = true;
+                                            console.log("AD PLAYING INTERVAL")
+                                        }
+                                        else {
+                                            clearInterval(getPlayingTime)
+                                            apiRequestTime = 1000;
+                                            getPlayingTime = setTimeout(getPlaying, apiRequestTime)
+                                            doUpdateCurrentTime = false;
+                                        }
+
+                                        // console.log(`${apiRequestTime} + 1`)
+                                        // console.log("DURATION: " + data.body.item.duration_ms)
+                                        // console.log("PROGRESS: " + data.body.progress_ms)
+                                        // // console.log(getPlayingTime)
+                                        // console.log("----------------------")
+
                                         //current time
                                         document.getElementById('currentTime').innerHTML = `Current Progress: ${millisToMinutesAndSeconds(data.body.progress_ms)}`
+                                        currentTime = data.body.progress_ms;
+                                        updateCurrentTimeIsPlaying = data.body.is_playing;
                                     } catch (err) { //its an ad... on another device
                                         if (data.body.currently_playing_type === 'ad') {
+                                            adPlaying = true;
                                             document.getElementById('nowPlaying').innerHTML = `Spotify is currently playing an AD. [NOT ON CURRENT DEVICE]` //ad
                                             document.getElementById('nowPlaying').style.fontSize = "2rem"
                                             document.getElementById('artist').innerHTML = ``;
@@ -387,12 +548,15 @@ fs.readFile(filePath, function (err, key) {
                                             document.getElementById('currentTime').style.fontSize = "large"
                                             document.getElementById('blockingStatus').style.fontSize = "large"
                                             document.getElementById('sticky').style.fontSize = "large"
+                                            document.title = `Currently Playing AD | AD Block Mode: ${appConfig.blockAds ? "Enabled" : "Disabled"} - SpotiMuter`;
                                         }
                                     }
                                 }
                             }
                             else if (playingOnCurrentDevice) { // playing on current device
                                 currentProgress = data.body.progress_ms;
+                                currentTime = data.body.progress_ms;
+                                updateCurrentTimeIsPlaying = data.body.is_playing;
                                 // console.log(`DATA CODE: ${data.statusCode}`)
                                 // console.log(`previous progress: ${previousProgress}`)
                                 // console.log(`current progress: ${currentProgress}`)
@@ -417,6 +581,14 @@ fs.readFile(filePath, function (err, key) {
                                         document.getElementById('currentTime').style.fontSize = "large"
                                         document.getElementById('blockingStatus').style.fontSize = "large"
                                         document.getElementById('sticky').style.fontSize = "large"
+                                        document.title = `SpotiMuter | AD Block Mode: ${appConfig.blockAds ? "Enabled" : "Disabled"}`;
+                                        clearInterval(getPlayingTime)
+                                        apiRequestTime = 10000;
+                                        getPlayingTime = setInterval(getPlaying, apiRequestTime)
+                                        currentlyPlaying = false;
+                                        runLog = true;
+                                        // getPlayingTime = setInterval(getPlaying(), apiRequestTime)
+                                        console.log("204 NO PLAYING SEGMENT")
                                     } else if (data.statusCode === 401) { //401
                                         // reauth
                                         console.log("reauthorizing")
@@ -432,12 +604,45 @@ fs.readFile(filePath, function (err, key) {
                                                 console.log('Could not refresh access token', err);
                                             }
                                         );
+                                        runLog = true;
+                                    }
+                                    else if (data.statusCode != 200 && data.statusCode != 401 && data.statusCode != 204) { // rate limited
+                                        //write log
+                                        //change status
+                                        //display lower msg
+                                        //stop current progress meter
+                                        //stop repeated creation of err files
+                                        var errDate = new Date();
+    
+                                        if (runLog) {
+                                            fs.writeFile(`./Error-log-captured-${errDate.getFullYear()}-${errDate.getMonth()}-${errDate.getDate()}-${errDate.getHours()}-${errDate.getMinutes()}-${errDate.getSeconds()}.txt`, `Error Code: ${data.statusCode}\n Date: ${Date()} \n OS: ${process.platform}; Version: ${os.release()} \n Extended Environment Info (begin on next line): \n Title: ${JSON.stringify(process.title)} \n Node Version: ${JSON.stringify(process.version)} \n Versions ${JSON.stringify(process.versions, null, "\t")} \n Architecture: ${process.arch} \n Platform: ${process.platform} \n Release: ${JSON.stringify(process.release, null, "\t")} \n execPath: ${process.execPath} \n Node Config ${JSON.stringify(process.config, null, "\t")} \n env: ${JSON.stringify(process.env, null, "\t")} \n\n END OF Extended Environment Info \n\n Host Device Name: ${hostDeviceName} \n Authed User Info: ${JSON.stringify(debuggingUserInfo, null, "\t")} \n Application Ready Time: ${appReadyTime}`, function (err) {
+                                                if (err) throw err;
+                                                console.log('Saved!');
+                                                runLog = false;
+                                            });
+                                        }
+    
+                                        document.getElementById("status").innerHTML = `Errored. Code ${data.statusCode}. See note at bottom.`
+    
+                                        document.getElementById("errorMsg").innerHTML = `NOTE: An error has occured. Please open an issue on <a href="https://github.com/AirFusion45/Spotify-Muter/issues">our GitHub</a> with this info. Thanks!`
+                                        if (document.body.style.backgroundImage === 'url("./background.jpg")') {
+                                            document.getElementById("errorMsg").style.color = "white";
+                                        }
+    
+                                        doUpdateCurrentTime = false;
+                                        clearInterval(getPlayingTime)
+                                        apiRequestTime = 5000;
+                                        getPlayingTime = setInterval(getPlaying, apiRequestTime);
                                     }
                                     else { // playing song
-
+                                        clearInterval(getPlayingTime) // reset (for beginning so it can update gui elements); before getting changed to 5000ms again
+                                        // apiRequestTime = 1000;
+                                        apiRequestTime = 1000;
+                                        getPlayingTime = setInterval(getPlaying, apiRequestTime);
+                                        runLog = true;
                                         //set now playing
-                                        // console.log("LEN" + data.body.item.name.length)
-                                        if (data.body.item.name.length > 45) {
+                                        console.log("LEN" + data.body.item.name.length)
+                                        if (data.body.item.name.length >= 36) {
                                             document.getElementById('nowPlaying').innerHTML = `${data.body.item.name}`
                                             document.getElementById('nowPlaying').style.fontSize = "1.5rem"
                                             document.getElementById('artist').style.fontSize = "medium"
@@ -457,6 +662,8 @@ fs.readFile(filePath, function (err, key) {
                                             document.getElementById('blockingStatus').style.fontSize = "large"
                                             document.getElementById('sticky').style.fontSize = "large"
                                         }
+                                        //set barText
+                                        document.title = `${data.body.item.name}: ${data.body.item.artists[0].name} | AD Block Mode: ${appConfig.blockAds ? "Enabled" : "Disabled"} - SpotiMuter`;
                                         //set album cover
                                         document.getElementById("albumCover").src = data.body.item.album.images[1].url
                                         // remove background img
@@ -519,8 +726,73 @@ fs.readFile(filePath, function (err, key) {
                                         }
                                         //run time
                                         document.getElementById('songRunTime').innerHTML = `Duration: ${millisToMinutesAndSeconds(data.body.item.duration_ms)} `
+                                        currentTime = data.body.item.progress_ms;
+
+                                        // if (data.body.item.duration_ms - data.body.progress_ms<10000){ // if song is ending
+                                        //     apiRequestTime = 1;
+                                        //     clearInterval(getPlayingTime);
+                                        // }
+                                        // else {
+                                        //     apiRequestTime = parseInt((data.body.item.duration_ms)-10000);
+                                        //     clearInterval(getPlayingTime);
+                                        // }
+                                        // console.log(`${apiRequestTime}+2`)
                                         // current progress
+
+                                        if ((data.body.item.duration_ms - data.body.progress_ms) > 30000) { // if song is not ending
+                                            if (data.body.progress_ms < 7000) {
+                                                setTimeout(() => {
+                                                    clearInterval(getPlayingTime) // use setTimeout
+                                                    // apiRequestTime = 1000;
+                                                    apiRequestTime = 5000;
+                                                    getPlayingTime = setInterval(getPlaying, apiRequestTime);
+                                                    doUpdateCurrentTime = true;
+                                                }, 2000);
+                                            } else {
+                                                clearInterval(getPlayingTime) // use setTimeout
+                                                // apiRequestTime = 1000;
+                                                apiRequestTime = 5000;
+                                                getPlayingTime = setInterval(getPlaying, apiRequestTime);
+                                                doUpdateCurrentTime = true;
+                                            }
+                                            console.log("SONG NOT ENDING SEGMENT")
+                                        } else if (data.statusCode == 204) { // if no song is playing
+                                            // clearInterval(getPlayingTime)
+                                            // clearTimeout(getPlayingTime)
+                                            // clearInterval(getPlayingTime);
+                                            // apiRequestTime = 1000;
+                                            clearInterval(getPlayingTime)
+                                            apiRequestTime = 10000;
+                                            getPlayingTime = setInterval(getPlaying, apiRequestTime)
+                                            currentlyPlaying = false;
+                                            // getPlayingTime = setInterval(getPlaying(), apiRequestTime)
+                                            console.log("204 NO PLAYING SEGMENT")
+                                        }
+                                        else if (data.body.currently_playing_type === 'ad') { // playing ad
+                                            // clearInterval(getPlayingTime)
+                                            clearInterval(getPlayingTime)
+                                            apiRequestTime = 5000;
+                                            getPlayingTime = setInterval(getPlaying, apiRequestTime)
+                                            adPlaying = true;
+                                            console.log("AD PLAYING INTERVAL")
+                                        }
+                                        else {
+                                            clearInterval(getPlayingTime)
+                                            apiRequestTime = 1000;
+                                            getPlayingTime = setTimeout(getPlaying, apiRequestTime)
+                                            doUpdateCurrentTime = false;
+                                        }
+
+                                        // console.log(`${apiRequestTime} + 1`)
+                                        // console.log("DURATION: " + data.body.item.duration_ms)
+                                        // console.log("PROGRESS: " + data.body.progress_ms)
+                                        // // console.log(getPlayingTime)
+                                        // console.log("----------------------")
+
                                         document.getElementById('currentTime').innerHTML = `Current Progress: ${millisToMinutesAndSeconds(data.body.progress_ms)} `
+                                        currentTime = data.body.progress_ms;
+
+
                                         // robot.keyTap("audio_mute");
                                         if (data.body.item.name != "ad" && muted === true) { //unmute if ad stops playing
                                             if (process.platform === "win32") {
@@ -553,6 +825,7 @@ fs.readFile(filePath, function (err, key) {
                                     document.getElementById('currentTime').style.fontSize = "large"
                                     document.getElementById('blockingStatus').style.fontSize = "large"
                                     document.getElementById('sticky').style.fontSize = "large"
+                                    document.title = `Currently Playing AD | AD Block Mode: ${appConfig.blockAds ? "Enabled" : "Disabled"} - SpotiMuter`;
                                     if (appConfig.blockAds === true) {
                                         if (data.body.currently_playing_type === "ad" && muted === false && (data.body.is_playing === true)) { //mute if ad starts previousProgress != currentProgress
                                             if (process.platform === "win32") {
@@ -612,22 +885,7 @@ fs.readFile(filePath, function (err, key) {
                     previousProgress = currentProgress;
                     //FIX: Access Token Refresh Loop: http://prntscr.com/o09vg6 - Fixed
                     //refresh token every 3500 seconds. Expiration time is 6000 seconds or 1 hour.
-                    if (new Date().getTime() - tokenExpTime > 3500000 && tokenRefTimer == 0) {
-                        spotifyApi.refreshAccessToken().then(
-                            function (data) {
 
-
-                                // Save the access token so that it's used in future calls
-                                spotifyApi.setAccessToken(data.body['access_token']);
-                                tokenExpTime = new Date().getTime();
-                                console.log(`The access token has been refreshed! EXP in ${tokenExpTime} `);
-                                tokenRefTimer++;
-                            },
-                            function (err) {
-                                console.log('Could not refresh access token', err);
-                            }
-                        );
-                    }
                     // }
                     // setInterval(refreshToken, 3500 * 1000)
 
@@ -661,8 +919,41 @@ fs.readFile(filePath, function (err, key) {
                     //     );
                     // }
                     // console.log(muted)
+
                 }
-                setInterval(getPlaying, 1 * 1000) //end of get playing
+                function checkToken() {
+                    console.log("Getting Token")
+                    console.log(new Date().getTime() - tokenExpTime)
+                    if (new Date().getTime() - tokenExpTime > 3500000) {
+                        spotifyApi.refreshAccessToken().then(
+                            function (data) {
+
+
+                                // Save the access token so that it's used in future calls
+                                spotifyApi.setAccessToken(data.body['access_token']);
+                                tokenExpTime = new Date().getTime();
+                                console.log(`The access token has been refreshed! EXP in ${tokenExpTime} `);
+                                tokenRefTimer++;
+                            },
+                            function (err) {
+                                console.log('Could not refresh access token', err);
+                            }
+                        );
+                    }
+                }
+                setInterval(checkToken, 1 * 1000)
+
+                function updateCurrentTime() {
+                    if (doUpdateCurrentTime === true && updateCurrentTimeIsPlaying === true && adPlaying === false) {
+                        currentTime += 1000;
+                        document.getElementById('currentTime').innerHTML = `Current Progress: ${millisToMinutesAndSeconds(currentTime)} `
+                        console.log("UPDATE CURRENT TIME")
+                    }
+
+                }
+                setInterval(updateCurrentTime, 1 * 1000)
+                //     setInterval(getDevices, 1 * 1000) // getDevices every 1 sec
+                //   var getPlayingTime = setInterval(getPlaying, 1 * 1000) //end of get playing //REPEATED REQUESTS NEED TO DEBUG
 
                 // console.log(`jsaslfjaslfjlasjfl OuT OF TIMED FUNCTION`)
             },
@@ -754,5 +1045,3 @@ fs.readFile(filePath, function (err, key) {
 
 
  // Watching for submit event in form tags
-
-

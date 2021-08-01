@@ -163,6 +163,17 @@ html, body {
     margin: 0;
     overflow: hidden;
 }
+#errorMsg{
+    font-size: large;
+    text-align: center;
+}
+#errorDiv{
+    position: fixed;
+    /* bottom: 185px; */
+    /* text-align: center; */
+    right:20.8205px;
+    top: 510px;
+}
 /* body {
     background: rgba(250, 172, 25, 0.5)
 } */

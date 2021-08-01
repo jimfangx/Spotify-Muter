@@ -4,5 +4,9 @@
         "**/.project": true,
         "**/.settings": true,
         "**/.factorypath": true
-    }
+    },
+    "nasc-touchbar.blockComment": true,
+    "nasc-touchbar.showCommands": false,
+    "nasc-touchbar.copyLineDown": true,
+    "nasc-touchbar.rename": false
 }

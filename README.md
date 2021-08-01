@@ -1,7 +1,7 @@
 # SpotiMuter
 SpotiMuter is an [Electron](https://electronjs.org) application that mutes Spotify ADs. When a Spotify AD is playing, SpotiMuter automatically mutes the Spotify application on Windows and mutes your speakers on all other platforms. It DOES NOT remove ADs from Spotify. **Spotify has patched HOST file editing. Even if there is a way to remove ADs completely, it can be detected by Spotify and WILL get your account banned. What SpotiMuter is doing is on the client side ONLY, and will NOT get your account banned by Spotify.**
 
-# Build from source: Using Git - Preferred build from source method
+# Build from source
 Instructions on how to build SpotiMuter from source.
 
   * __**Prerequisites:**__
@@ -12,23 +12,16 @@ Instructions on how to build SpotiMuter from source.
   * __**Instructions:**__ 
     * Fork SpotiMuter using `git clone https://github.com/AirFusion45/Spotify-Muter.git`
     * Install all required dependencies using `npm install`
-    * Start app using `npm start || electron .`
-    
-# Build from source - Not using Git:
-  * __**Prerequisites:**__
-    * A computer that has a command line
-    * A computer that has nodeJS installed on it, and the ability to install npm modules.
-    * Know the basics of how to install NPM packags & rebuild them if necessary. 
-  
-  * __**Instructions:**__
-    * Download the source code as a zip file
-    * Unzip the zip file then, cd into the unzipped folder
-    * Run `npm install` to install all dependencies
+    * Go into `config.json` and make sure that `devMode` is set to `false`
     * Start app using `npm start || electron .`
 
 # NPM Rebuild Instructions
 You might need to rebuild some modules when building from source. It is helpful if you have a basic understanding of how NPM rebuilding works. Below is a rough example of the rebuild command. The command below is for rebuilding robotjs against node 69. 
 `npm rebuild --runtime=electron --target=4.2.0 --disturl=https://atom.io/download/atom-shell --abi=69`
+
+# Download Alpha Version
+* The alpha version of the complied EXE is under "release". 
+* Please note that this software is still in ALPHA. There is only a windows EXE that hs been compiled. MacOS .dmg has not been compiled. Read the first release on why there is no MacOS .dmg
 
 # SpotiMuter Features
 * Mutes Spotify application/Speakers when AD is playing
