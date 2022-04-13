@@ -21,7 +21,7 @@
     "electron-packager": "^15.3.0"
   },
   "dependencies": {
-    "@sentry/electron": "^2.5.1",
+    "@sentry/electron": "^3.0.7",
     "aes-cross": "^1.0.9",
     "auto-launch": "^5.0.5",
     "flatted": "^2.0.1",
